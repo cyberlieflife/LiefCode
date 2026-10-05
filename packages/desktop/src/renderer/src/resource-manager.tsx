@@ -4,7 +4,9 @@ import "@zcode/ui/styles.css";
 import {
   ResourceManagerApp,
   ZCodeIntlProvider,
+  applyTheme,
   applyUiFontSizePx,
+  isTheme,
   loadUiFontSizePx,
   subscribeToUiFontSizeStorageChanges,
 } from "@zcode/ui";
@@ -19,31 +21,11 @@ declare global {
   }
 }
 
-type Theme = "light" | "dark" | "zai-light" | "zai-dark" | "system";
-
-function resolveTheme(theme: Theme): "light" | "dark" {
-  if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  }
-  return theme === "dark" || theme === "zai-dark" ? "dark" : "light";
-}
-
+// 资源管理器是独立窗口，只读主窗口写入 localStorage 的主题偏好。
+// 复用 useTheme 的 applyTheme，避免这里再维护一份主题取值与 class 映射。
 function applyResourceManagerTheme(): void {
-  const savedTheme = (localStorage.getItem("zcode-theme") as Theme | null) ?? "zai-dark";
-  const resolvedTheme = resolveTheme(savedTheme);
-  const appliedTheme =
-    savedTheme === "system"
-      ? resolvedTheme === "dark"
-        ? "zai-dark"
-        : "zai-light"
-      : savedTheme === "dark"
-        ? "zai-dark"
-        : savedTheme === "light"
-          ? "zai-light"
-          : savedTheme;
-  document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  const savedTheme = localStorage.getItem("zcode-theme");
+  applyTheme(isTheme(savedTheme) ? savedTheme : "zai-dark");
 }
 
 applyResourceManagerTheme();

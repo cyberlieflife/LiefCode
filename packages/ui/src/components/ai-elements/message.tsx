@@ -97,7 +97,7 @@ import { useWorkspaceOpenInEditorTarget } from "@/hooks/useWorkspaceOpenInEditor
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
-import type { Theme } from "@/useTheme.js";
+import { normalizeThemePreference, resolveStaticTheme, type Theme } from "@/useTheme.js";
 import { createZCodeFileCitationRemarkPlugin } from "@/lib/zcodeFileCitationRemarkPlugin.js";
 import { windowsFileLinkEscapeRemarkPlugin } from "@/lib/windowsFileLinkEscapeRemarkPlugin.js";
 import { projectZCodeFileCitations } from "@/lib/zcodeFileCitation.js";
@@ -849,7 +849,7 @@ function resolveMessageCodeTheme(
       : codePreviewSettings.lightTheme;
   }
 
-  return theme === "dark" || theme === "zai-dark"
+  return resolveStaticTheme(normalizeThemePreference(theme) as Exclude<Theme, "system">) === "dark"
     ? codePreviewSettings.darkTheme
     : codePreviewSettings.lightTheme;
 }

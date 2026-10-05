@@ -1,3 +1,5 @@
+import type { StyleTheme } from "@/useTheme.js";
+
 interface WorkspaceShellWindowChromeOptions {
   isMacDesktop?: boolean;
   isWindowsDesktop?: boolean;
@@ -5,22 +7,29 @@ interface WorkspaceShellWindowChromeOptions {
   macOSMajorVersion?: number | null;
   isWindowsMaximized: boolean;
   supportsNativeRoundedCorners: boolean | null;
+  /** 样式主题；Claude 会把渲染进程自绘的窗口外形圆角放大。 */
+  styleTheme?: StyleTheme;
 }
 
 type WorkspaceShellPlatformRadiusOptions = Pick<
   WorkspaceShellWindowChromeOptions,
-  "isMacDesktop" | "isWindowsDesktop" | "isLinuxDesktop" | "macOSMajorVersion"
+  "isMacDesktop" | "isWindowsDesktop" | "isLinuxDesktop" | "macOSMajorVersion" | "styleTheme"
 >;
+
+/** Claude 样式下渲染进程自绘的窗口外形圆角，对应 DESIGN.md 的 xl 档。 */
+const CLAUDE_PANEL_RADIUS_PX = 16;
 
 export function resolveWorkspaceShellPanelRadiusPx({
   isMacDesktop,
   isWindowsDesktop,
   macOSMajorVersion,
+  styleTheme = "default",
 }: WorkspaceShellPlatformRadiusOptions): number {
-  if (isWindowsDesktop) return 5;
-  // 忽略 macOS 版本会让 Sequoia 的内层 12px 圆角与原生窗口小圆角不协调。
-  // 保留 4px 外层留白，旧系统和未知版本用 6px，明确识别 Tahoe 26+ 才用 12px。
+  // macOS 的面板圆角用于和系统绘制的原生窗口角同心，不能跟随样式主题改大，
+  // 否则 4px 留白不再是同心圆。Windows/Linux 的窗口外形由渲染进程自绘，可以跟随。
   if (isMacDesktop) return (macOSMajorVersion ?? 0) >= 26 ? 12 : 6;
+  if (styleTheme === "claude") return CLAUDE_PANEL_RADIUS_PX;
+  if (isWindowsDesktop) return 5;
   return 12;
 }
 
@@ -36,12 +45,25 @@ export function resolveWorkspaceShellWindowChromeClass({
   isLinuxDesktop,
   macOSMajorVersion,
   supportsNativeRoundedCorners,
+  styleTheme = "default",
 }: WorkspaceShellWindowChromeOptions): string {
-  // Linux 与设置页一致使用 xl；面板已有独立留白，不承担系统窗口外沿。
+  // Linux 面板圆角走 rounded-xl；Claude 样式下该档正好等于窗口外形圆角。
   if (isLinuxDesktop) return "rounded-xl border border-border";
-  if (!isWindowsDesktop) {
+
+  if (isWindowsDesktop && styleTheme === "claude") {
+    // Claude 样式的窗口外形由渲染进程自绘，四角都按 DESIGN.md 的 xl 档收圆。
+    // 这条分支不区分原生圆角能力：Claude 主题要的是一致的外形，Windows 10 也照样绘制。
+    // 必须用字面量类名：Tailwind 只生成源码里出现过的类，拼接出来的类名不会进产物。
+    // Claude 样式下 rounded-xl 即为 CLAUDE_PANEL_RADIUS_PX。
+    return "rounded-xl border border-border";
+  }
+
+  if (isMacDesktop) {
+    // macOS 面板圆角存在的意义是和系统绘制的原生窗口角同心，不能跟随样式主题放大，
+    // 否则 4px 留白不再是同心圆。这里用显式像素值，避免 rounded-xl 被样式主题改写后
+    // 与 --workspace-panel-radius 的实际取值分叉。
     const radius = resolveWorkspaceShellPanelRadiusPx({ isMacDesktop, macOSMajorVersion });
-    return radius === 6 ? "rounded-[6px] border border-border" : "rounded-xl border border-border";
+    return radius === 6 ? "rounded-[6px] border border-border" : "rounded-[12px] border border-border";
   }
 
   if (supportsNativeRoundedCorners === null) {

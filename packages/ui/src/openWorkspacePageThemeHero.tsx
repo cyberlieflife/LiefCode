@@ -49,6 +49,28 @@ function getThemeHeroPalette(theme: Theme): ThemeHeroPalette {
         heading: "text-[#F8F8F8]",
         description: "text-[#ADADAD]",
       };
+    case "claude-light":
+      return {
+        meshBase: "#faf9f5",
+        meshLight: "#cc785c",
+        panel:
+          "bg-[linear-gradient(180deg,#faf9f5_0%,#f5f0e8_42%,#efe9de_100%)] before:absolute before:inset-0 before:content-[''] before:bg-[radial-gradient(circle_at_18%_20%,rgba(255,255,255,0.85),transparent_24%),radial-gradient(circle_at_82%_14%,rgba(204,120,92,0.22),transparent_26%),radial-gradient(circle_at_70%_84%,rgba(232,165,90,0.18),transparent_30%)]",
+        glowPrimary: "bg-[#CC785C]/35 mix-blend-multiply",
+        glowSecondary: "bg-[#F5F0E8]/80 mix-blend-multiply",
+        heading: "text-[#141413]",
+        description: "text-[#3D3D3A]",
+      };
+    case "claude-dark":
+      return {
+        meshBase: "#181715",
+        meshLight: "#cc785c",
+        panel:
+          "bg-[linear-gradient(180deg,#181715_0%,#1f1e1b_42%,#252320_100%)] before:absolute before:inset-0 before:content-[''] before:bg-[radial-gradient(circle_at_18%_18%,rgba(204,120,92,0.2),transparent_24%),radial-gradient(circle_at_82%_12%,rgba(232,165,90,0.16),transparent_26%),radial-gradient(circle_at_66%_84%,rgba(224,162,140,0.14),transparent_28%)]",
+        glowPrimary: "bg-[#CC785C]/22 mix-blend-screen",
+        glowSecondary: "bg-[#E8A55A]/16 mix-blend-screen",
+        heading: "text-[#FAF9F5]",
+        description: "text-[#A09D96]",
+      };
     case "dark":
     case "system":
     default:

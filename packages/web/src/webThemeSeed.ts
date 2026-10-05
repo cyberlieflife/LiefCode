@@ -1,22 +1,8 @@
-type WebThemeSeed = "light" | "dark" | "zai-light" | "zai-dark" | "system";
+import { isTheme, normalizeThemePreference, type Theme } from "@zcode/ui/useTheme";
+
+type WebThemeSeed = Theme;
 
 export const WEB_DEFAULT_THEME: WebThemeSeed = "zai-dark";
-
-function isWebThemeSeed(value: unknown): value is WebThemeSeed {
-  return (
-    value === "light" ||
-    value === "dark" ||
-    value === "zai-light" ||
-    value === "zai-dark" ||
-    value === "system"
-  );
-}
-
-function normalizeWebThemeSeed(theme: WebThemeSeed): WebThemeSeed {
-  if (theme === "dark") return "zai-dark";
-  if (theme === "light") return "zai-light";
-  return theme;
-}
 
 export function resolveWebInitialTheme({
   storedTheme,
@@ -25,9 +11,10 @@ export function resolveWebInitialTheme({
   storedTheme?: string | null;
   defaultTheme?: WebThemeSeed;
 }): WebThemeSeed {
-  if (isWebThemeSeed(storedTheme)) {
-    return normalizeWebThemeSeed(storedTheme);
+  // 主题取值集合由 useTheme 统一维护，Web 首屏种子不再单独维护一份白名单。
+  if (isTheme(storedTheme)) {
+    return normalizeThemePreference(storedTheme) as WebThemeSeed;
   }
 
-  return normalizeWebThemeSeed(defaultTheme);
+  return normalizeThemePreference(defaultTheme) as WebThemeSeed;
 }

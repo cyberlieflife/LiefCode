@@ -33,6 +33,7 @@ import { requestV4ComposerDraftWorkspaceTransfer } from "@/v4/composer/composerD
 import { ChatEmptyWorkspacePreviewMenu } from "@/ChatEmptyState.js";
 import { DesktopTopOverlay } from "@/DesktopTopOverlay.js";
 import { DesktopWindowFrame } from "@/DesktopWindowFrame.js";
+import { resolveStyleTheme } from "@/useTheme.js";
 import { WorkspacePluginPreview } from "@/WorkspacePluginPreview.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { GitBranchSwitcher } from "@/GitBranchSwitcher.js";
@@ -346,6 +347,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
     isWindowsDesktop,
     isLinuxDesktop,
     macOSMajorVersion: desktopWindowChromeState?.macOSMajorVersion,
+    styleTheme: resolveStyleTheme(theme),
   };
   const workspacePanelRadiusPx = resolveWorkspaceShellPanelRadiusPx(workspaceShellRadiusOptions);
   const workspaceResizeHandleInsetPx = resolveWorkspaceShellResizeHandleInsetPx(
@@ -1425,6 +1427,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
         isWindowsMaximized: desktopWindowChromeState?.isMaximized ?? false,
         supportsNativeRoundedCorners:
           desktopWindowChromeState?.supportsNativeRoundedCorners ?? null,
+        styleTheme: resolveStyleTheme(theme),
       })}
       showWindowControls={usesInlineWindowControls}
       isVisible={isSidePaneVisible}
@@ -1680,6 +1683,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                             isWindowsMaximized: desktopWindowChromeState?.isMaximized ?? false,
                             supportsNativeRoundedCorners:
                               desktopWindowChromeState?.supportsNativeRoundedCorners ?? null,
+                            styleTheme: resolveStyleTheme(theme),
                           }),
                       isTerminalVisible && "rounded-b-[var(--workspace-panel-radius)] border-b",
                     )}
@@ -1912,6 +1916,7 @@ export const WorkspaceShellLayout = memo(function WorkspaceShellLayoutComponent(
                             isWindowsMaximized: desktopWindowChromeState?.isMaximized ?? false,
                             supportsNativeRoundedCorners:
                               desktopWindowChromeState?.supportsNativeRoundedCorners ?? null,
+                            styleTheme: resolveStyleTheme(theme),
                           }),
                       "rounded-t-[var(--workspace-panel-radius)] border-t",
                     )}

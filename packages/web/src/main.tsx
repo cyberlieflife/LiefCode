@@ -8,6 +8,7 @@ import {
   playTaskNotificationSound,
   setStreamClientId,
   type Theme,
+  applyTheme,
 } from "@zcode/ui";
 import "@zcode/ui/styles.css";
 import { connectViaWebSocket } from "@zcode/client";
@@ -36,34 +37,14 @@ function resolveWebThemePreference(defaultTheme: Theme = WEB_DEFAULT_THEME): The
   return resolveWebInitialTheme({ storedTheme: saved, defaultTheme });
 }
 
-// 初始化主题：默认 Zai dark，后续由 useTheme hook 接管
-// system 模式下需要查询系统偏好；非 system 模式直接用存储值
+// 初始化主题：默认 Zai dark，后续由 useTheme hook 接管。
+// 复用 useTheme 的 applyTheme，避免这里再维护一份主题取值与 class 映射。
 {
   // 分享页没有本地主题配置时使用浅色，已有配置仍然沿用；其他 Web 页面继续默认深色。
   const saved = resolveWebThemePreference(
     isConversationSharePath(window.location.pathname) ? "zai-light" : undefined,
   );
-  const resolved =
-    saved === "system"
-      ? window.matchMedia("(prefers-color-scheme: dark)").matches
-        ? "dark"
-        : "light"
-      : saved === "dark" || saved === "zai-dark"
-        ? "dark"
-        : "light";
-  const appliedTheme =
-    saved === "system"
-      ? resolved === "dark"
-        ? "zai-dark"
-        : "zai-light"
-      : saved === "dark"
-        ? "zai-dark"
-        : saved === "light"
-          ? "zai-light"
-          : saved;
-  document.documentElement.classList.toggle("dark", resolved === "dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  applyTheme(saved);
 }
 
 async function resolveFeedbackUrl(): Promise<string | undefined> {

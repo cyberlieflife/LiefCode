@@ -1,12 +1,14 @@
 import {
   Monitor,
   Moon,
+  MoonStar,
   Settings,
   Settings2,
   Package,
   Bot,
   Palette,
   Sun,
+  SunMedium,
   BarChart3,
   Terminal,
   AlarmClock,
@@ -29,6 +31,9 @@ export const THEME_MODES: Array<{
   { mode: "system", icon: Monitor },
   { mode: "zai-dark", icon: Moon },
   { mode: "zai-light", icon: Sun },
+  // Claude 主题同时携带配色与样式（圆角刻度、极淡阴影、衬线标题）。
+  { mode: "claude-dark", icon: MoonStar },
+  { mode: "claude-light", icon: SunMedium },
 ];
 
 type SettingsSectionGroupId = "basics" | "agentCapabilities" | "dataAndStats";

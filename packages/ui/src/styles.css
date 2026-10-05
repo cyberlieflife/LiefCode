@@ -56,6 +56,9 @@ body,
 
 :root {
   --ui-font-size: 14px;
+  /* 窗口外壳圆角默认与 Linux 既有 16px 同心圆一致；
+   * 样式主题（如 Claude）在 .style-claude 里覆盖成更大的窗口外形。 */
+  --window-shell-radius: 16px;
 }
 
 body {
@@ -747,6 +750,376 @@ body {
   --color-plugin-node-foreground: #efc58f;
   --color-plugin-paid-plan-badge: #5a341b;
   --color-plugin-paid-plan-badge-foreground: #ffd8b8;
+}
+
+/*
+ * Claude 配色沿用 Anthropic 官方 DESIGN.md 的色值体系：奶油画布 + 珊瑚主色 + 深墨文字。
+ * 官方色值是给营销页配的，部分语义色直接放到奶油底上只有 2.0-2.5 对比度，
+ * 因此「作为文字/填充」的语义色在保持色相的前提下加深，珊瑚填充保留官方 #cc785c。
+ */
+.theme-claude-light {
+  --animated-gradient-text-strong: rgba(20, 20, 19, 1);
+  --animated-gradient-text-soft: rgba(20, 20, 19, 0.22);
+  /* 奶油画布 #faf9f5 是 Claude 的品牌底色，不用纯白。 */
+  --color-background: #faf9f5;
+  --color-background-win-alt: #efe9de;
+  --color-background-alt: color-mix(in oklab, var(--color-background) 70%, transparent);
+  /* 品牌色在浅色下要当链接和强调文字用，取官方 primary-active 以保证可读。 */
+  --color-brand: #a9583e;
+  --color-trajectory-user: #a9583e;
+  --color-trajectory-assistant: #2f7f70;
+  --color-trajectory-reasoning: #6b5b95;
+  --color-trajectory-tool-call: #9a6520;
+  --color-trajectory-tool-result: #4a6b8a;
+  --color-workflow-rule: rgba(20, 20, 19, 0.055);
+  --color-workflow-trace: rgba(20, 20, 19, 0.3);
+  --color-workflow-trace-strong: rgba(20, 20, 19, 0.55);
+  --color-accent: #f5f0e8;
+  --color-find-highlight: #fbe3c2;
+  --color-find-highlight-active: #e8a55a;
+  --color-border: #e6dfd8;
+  --color-border-hover: #d5cbbd;
+  --color-hover: rgba(20, 20, 19, 0.05);
+  --color-selected: #efe9de;
+  --color-header: #faf9f5;
+  --color-panel: #faf9f5;
+  --color-sidebar: #f5f0e8;
+  --color-surface: rgba(20, 20, 19, 0.03);
+  --color-surface-hover: rgba(20, 20, 19, 0.05);
+  --color-card: #ffffff;
+  --color-card-selected: #efe9de;
+  --color-card-border: var(--color-border);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-foreground);
+  --color-popover-header: #f5f0e8;
+  --color-popover-border: var(--color-border);
+  --color-input: #ffffff;
+  --color-input-focused: var(--color-input);
+  --color-input-border: var(--color-border);
+  --color-input-border-hover: var(--color-border-hover);
+  /* Claude 的输入聚焦用珊瑚描边，是本主题最直观的品牌触点之一。 */
+  --color-input-border-focused: #a9583e;
+  /* Claude 的代码/终端一律落在深色面上，浅色主题里同样保留这个对比。 */
+  --color-terminal-bg: #181715;
+  --color-terminal-fg: #faf9f5;
+  --color-terminal-cursor: #faf9f5;
+  --color-terminal-cursor-accent: #181715;
+  --color-terminal-selection: rgba(204, 120, 92, 0.3);
+  --color-terminal-selection-inactive: rgba(250, 249, 245, 0.16);
+  --color-terminal-black: #3a3632;
+  --color-terminal-red: #e08585;
+  --color-terminal-green: #87c99a;
+  --color-terminal-yellow: #e8c07a;
+  --color-terminal-blue: #8ab4d8;
+  --color-terminal-magenta: #c9a0dc;
+  --color-terminal-cyan: #8fd0c4;
+  --color-terminal-white: #d9d5cd;
+  --color-terminal-bright-black: #6b665f;
+  --color-terminal-bright-red: #ef9a9a;
+  --color-terminal-bright-green: #a3d9b1;
+  --color-terminal-bright-yellow: #f0d199;
+  --color-terminal-bright-blue: #a8c8e8;
+  --color-terminal-bright-magenta: #dab8e8;
+  --color-terminal-bright-cyan: #aee0d6;
+  --color-terminal-bright-white: #faf9f5;
+  --color-usage-chart-1: #c4704f;
+  --color-usage-chart-2: #3f8f80;
+  --color-usage-chart-3: #8a75ad;
+  --color-usage-chart-4: #4a9a5f;
+  --color-usage-chart-5: #c98a3f;
+  --color-usage-chart-6: #5c8bb5;
+  /* Context breakdown 用珊瑚单色阶，与 Claude 的暖色品牌一致。 */
+  --color-context-breakdown-1: #cc785c;
+  --color-context-breakdown-2: #d68d74;
+  --color-context-breakdown-3: #e0a28c;
+  --color-context-breakdown-4: #e9b7a4;
+  --color-context-breakdown-5: #f0cbbc;
+  --color-context-breakdown-6: #f6ded4;
+  --color-context-breakdown-7: #faeae3;
+  --color-usage-heatmap-0: color-mix(in oklab, #cc785c 0%, var(--color-surface));
+  --color-usage-heatmap-1: color-mix(in oklab, #cc785c 18%, var(--color-surface));
+  --color-usage-heatmap-2: color-mix(in oklab, #cc785c 36%, var(--color-surface));
+  --color-usage-heatmap-3: color-mix(in oklab, #cc785c 58%, var(--color-surface));
+  --color-usage-heatmap-4: color-mix(in oklab, #a9583e 82%, var(--color-surface));
+  --color-tab: #f5f0e8;
+  --color-tab-active: #ffffff;
+  --color-tab-border: var(--color-border);
+  --color-menu: #ffffff;
+  --color-menu-hover: #f5f0e8;
+  /* 主按钮保留 Claude 官方珊瑚；前景色对比度与仓库既有深色危险按钮一致。 */
+  --color-primary: #cc785c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e8e0d2;
+  --color-interaction-ask-surface: #f5f0e8;
+  --color-interaction-ask-foreground: #8a5a3c;
+  --color-interaction-ask-fill: rgba(93, 184, 114, 0.2);
+  --color-interaction-confirmation-surface: #eaf0e6;
+  --color-interaction-confirmation-foreground: #3f7d4e;
+  --color-foreground: #3d3d3a;
+  /* subtle/subtlest 比官方 muted 略深，保证在 surface-card 上仍达到正文对比度。 */
+  --color-foreground-subtle: #66645e;
+  --color-foreground-subtlest: #8e8b82;
+  --color-foreground-inverse: #ffffff;
+  --color-success: #3f7d4e;
+  --color-success-foreground: #ffffff;
+  --color-idle-task: #8a75ad;
+  --color-idle-task-surface: #f3eff8;
+  --color-destructive: #b23b3b;
+  --color-destructive-foreground: #ffffff;
+  --color-warning: #9a6520;
+  --color-feedback-privacy-hint: #9a6520;
+  --color-warning-foreground: #ffffff;
+  --color-diff-added: #3f7d4e;
+  --color-diff-added-foreground: #ffffff;
+  --color-diff-removed: #b23b3b;
+  --color-diff-removed-foreground: #ffffff;
+  --color-git-none: var(--color-foreground);
+  --color-git-modified: #9a6520;
+  --color-git-added: #3f7d4e;
+  --color-git-deleted: #b23b3b;
+  --color-git-renamed: #4a6b8a;
+  --color-git-untracked: #3f7d4e;
+  --color-git-ignored: var(--color-foreground-subtlest);
+  --color-git-descendant: #9a6520;
+  --color-toast: #ffffff;
+  /* 深色浮标是 Claude 在奶油底上的标志性对比，浅色主题沿用深色 tooltip。 */
+  --color-tooltip: #181715;
+  --color-tooltip-foreground: #faf9f5;
+  --color-tooltip-tag: #3a3632;
+  --color-tooltip-tag-foreground: #a09d96;
+  --color-tag: #efe9de;
+  --color-file-node: rgba(74, 107, 138, 0.12);
+  --color-file-node-hover: rgba(74, 107, 138, 0.18);
+  --color-file-node-foreground: #4a6b8a;
+  --color-skill-node: rgba(107, 91, 149, 0.12);
+  --color-skill-node-hover: rgba(107, 91, 149, 0.18);
+  --color-skill-node-foreground: #6b5b95;
+  --color-command-node: rgba(90, 86, 80, 0.12);
+  --color-command-node-hover: rgba(90, 86, 80, 0.18);
+  --color-command-node-foreground: #5a5650;
+  --color-subagent-node: rgba(111, 122, 47, 0.12);
+  --color-subagent-node-hover: rgba(111, 122, 47, 0.18);
+  --color-subagent-node-foreground: #6f7a2f;
+  --color-session-node: rgba(47, 127, 112, 0.12);
+  --color-session-node-hover: rgba(47, 127, 112, 0.18);
+  --color-session-node-foreground: #2f7f70;
+  --color-plugin-node: rgba(154, 101, 32, 0.12);
+  --color-plugin-node-hover: rgba(154, 101, 32, 0.18);
+  --color-plugin-node-foreground: #9a6520;
+  --color-plugin-paid-plan-badge: #ffe3c8;
+  --color-plugin-paid-plan-badge-foreground: #4b280f;
+}
+
+.theme-claude-dark {
+  --animated-gradient-text-strong: rgba(250, 249, 245, 1);
+  --animated-gradient-text-soft: rgba(250, 249, 245, 0.22);
+  /* Claude 的深色面是暖墨 #181715，而非中性灰黑。 */
+  --color-background: #181715;
+  --color-background-win-alt: #252320;
+  --color-background-alt: color-mix(in oklab, var(--color-background-win-alt) 60%, transparent);
+  --color-brand: #cc785c;
+  --color-trajectory-user: #e0a28c;
+  --color-trajectory-assistant: #7fd0bd;
+  --color-trajectory-reasoning: #c0a8dd;
+  --color-trajectory-tool-call: #e8c07a;
+  --color-trajectory-tool-result: #a8c8e8;
+  --color-workflow-rule: rgba(250, 249, 245, 0.065);
+  --color-workflow-trace: rgba(250, 249, 245, 0.35);
+  --color-workflow-trace-strong: rgba(250, 249, 245, 0.6);
+  --color-accent: color-mix(in oklab, #cc785c 16%, transparent);
+  --color-find-highlight: #4a2f1e;
+  --color-find-highlight-active: #cc785c;
+  --color-border: rgba(250, 249, 245, 0.1);
+  --color-border-hover: rgba(250, 249, 245, 0.18);
+  --color-hover: rgba(250, 249, 245, 0.05);
+  --color-selected: rgba(250, 249, 245, 0.08);
+  --color-header: #1f1e1b;
+  --color-panel: #1f1e1b;
+  --color-sidebar: #181715;
+  --color-surface: rgba(250, 249, 245, 0.05);
+  --color-surface-hover: rgba(250, 249, 245, 0.08);
+  --color-card: #252320;
+  --color-card-selected: #1f1e1b;
+  --color-card-border: var(--color-border);
+  --color-popover: #252320;
+  --color-popover-foreground: var(--color-foreground);
+  --color-popover-header: #1f1e1b;
+  --color-popover-border: var(--color-border);
+  --color-input: #252320;
+  --color-input-focused: var(--color-input);
+  --color-input-border: var(--color-border);
+  --color-input-border-hover: var(--color-border-hover);
+  --color-input-border-focused: #cc785c;
+  --color-terminal-bg: #1f1e1b;
+  --color-terminal-fg: #faf9f5;
+  --color-terminal-cursor: #faf9f5;
+  --color-terminal-cursor-accent: #181715;
+  --color-terminal-selection: rgba(204, 120, 92, 0.28);
+  --color-terminal-selection-inactive: rgba(250, 249, 245, 0.1);
+  --color-terminal-black: #3a3632;
+  --color-terminal-red: #e08585;
+  --color-terminal-green: #87c99a;
+  --color-terminal-yellow: #e8c07a;
+  --color-terminal-blue: #8ab4d8;
+  --color-terminal-magenta: #c9a0dc;
+  --color-terminal-cyan: #8fd0c4;
+  --color-terminal-white: #d9d5cd;
+  --color-terminal-bright-black: #6b665f;
+  --color-terminal-bright-red: #ef9a9a;
+  --color-terminal-bright-green: #a3d9b1;
+  --color-terminal-bright-yellow: #f0d199;
+  --color-terminal-bright-blue: #a8c8e8;
+  --color-terminal-bright-magenta: #dab8e8;
+  --color-terminal-bright-cyan: #aee0d6;
+  --color-terminal-bright-white: #faf9f5;
+  --color-usage-chart-1: #cc785c;
+  --color-usage-chart-2: #5db8a6;
+  --color-usage-chart-3: #b8a3d8;
+  --color-usage-chart-4: #5db872;
+  --color-usage-chart-5: #e8a55a;
+  --color-usage-chart-6: #8ab4d8;
+  --color-context-breakdown-1: #cc785c;
+  --color-context-breakdown-2: #d68d74;
+  --color-context-breakdown-3: #e0a28c;
+  --color-context-breakdown-4: #e9b7a4;
+  --color-context-breakdown-5: #f0cbbc;
+  --color-context-breakdown-6: #f6ded4;
+  --color-context-breakdown-7: #faeae3;
+  --color-usage-heatmap-0: color-mix(in oklab, #cc785c 0%, var(--color-surface));
+  --color-usage-heatmap-1: color-mix(in oklab, #cc785c 22%, var(--color-surface));
+  --color-usage-heatmap-2: color-mix(in oklab, #cc785c 40%, var(--color-surface));
+  --color-usage-heatmap-3: color-mix(in oklab, #cc785c 60%, var(--color-surface));
+  --color-usage-heatmap-4: color-mix(in oklab, #e0a28c 78%, var(--color-surface));
+  --color-tab: #1f1e1b;
+  --color-tab-active: #181715;
+  --color-tab-border: var(--color-border);
+  --color-menu: #252320;
+  --color-menu-hover: #2e2b27;
+  --color-primary: #cc785c;
+  /* 深色下珊瑚填充配暖墨前景，对比度高于白字。 */
+  --color-primary-foreground: #181715;
+  --color-secondary: #3a3632;
+  --color-interaction-ask-surface: color-mix(in oklab, #cc785c 14%, transparent);
+  --color-interaction-ask-foreground: #e0a28c;
+  --color-interaction-ask-fill: rgba(93, 184, 114, 0.24);
+  --color-interaction-confirmation-surface: color-mix(in oklab, #5db872 16%, transparent);
+  --color-interaction-confirmation-foreground: #87c99a;
+  --color-foreground: #faf9f5;
+  --color-foreground-subtle: #a09d96;
+  --color-foreground-subtlest: #8e8b82;
+  --color-foreground-inverse: #181715;
+  --color-success: #5db872;
+  --color-success-foreground: #181715;
+  --color-idle-task: #b8a3d8;
+  --color-idle-task-surface: color-mix(in oklab, #b8a3d8 14%, transparent);
+  --color-destructive: #d97070;
+  --color-destructive-foreground: #181715;
+  --color-warning: #e8a55a;
+  --color-feedback-privacy-hint: #e8a55a;
+  --color-warning-foreground: #181715;
+  --color-diff-added: #5db872;
+  --color-diff-added-foreground: #181715;
+  --color-diff-removed: #d97070;
+  --color-diff-removed-foreground: #181715;
+  --color-git-none: var(--color-foreground);
+  --color-git-modified: #e8a55a;
+  --color-git-added: #5db872;
+  --color-git-deleted: #d97070;
+  --color-git-renamed: #8ab4d8;
+  --color-git-untracked: #5db872;
+  --color-git-ignored: var(--color-foreground-subtlest);
+  --color-git-descendant: #e8a55a;
+  --color-toast: #252320;
+  --color-tooltip: #252320;
+  --color-tooltip-foreground: #faf9f5;
+  --color-tooltip-tag: #3a3632;
+  --color-tooltip-tag-foreground: #a09d96;
+  --color-tag: #3a3632;
+  --color-file-node: rgba(138, 180, 216, 0.16);
+  --color-file-node-hover: rgba(138, 180, 216, 0.22);
+  --color-file-node-foreground: #a8c8e8;
+  --color-skill-node: rgba(184, 163, 216, 0.16);
+  --color-skill-node-hover: rgba(184, 163, 216, 0.22);
+  --color-skill-node-foreground: #c0a8dd;
+  --color-command-node: rgba(168, 163, 155, 0.14);
+  --color-command-node-hover: rgba(168, 163, 155, 0.2);
+  --color-command-node-foreground: #b8b3ab;
+  --color-subagent-node: rgba(183, 189, 117, 0.16);
+  --color-subagent-node-hover: rgba(183, 189, 117, 0.22);
+  --color-subagent-node-foreground: #c8cd90;
+  --color-session-node: rgba(127, 208, 189, 0.16);
+  --color-session-node-hover: rgba(127, 208, 189, 0.22);
+  --color-session-node-foreground: #a3d9cc;
+  --color-plugin-node: rgba(232, 165, 90, 0.16);
+  --color-plugin-node-hover: rgba(232, 165, 90, 0.22);
+  --color-plugin-node-foreground: #e8c07a;
+  --color-plugin-paid-plan-badge: #4a2f1e;
+  --color-plugin-paid-plan-badge-foreground: #ffd8b8;
+}
+
+/*
+ * === Claude 样式主题层 ===
+ * 只改几何、阴影与排版，不改信息密度和组件分布，因此不需要逐个组件改样式。
+ * Tailwind v4 的 rounded-* 工具类编译结果是 border-radius: var(--radius-*)，
+ * 覆盖刻度即可让全部组件跟随；阴影则是编译期内联，需要按工具类逐个覆盖。
+ */
+.style-claude {
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  /* Claude 官方刻度到 xl(16px) 为止，但仓库的对话框外壳用 2xl 且内容重新从 xl 起算。
+   * 两者取值相同会让对话框和内容圆角齐平、丢掉层级，这里保留一档差（20px）。 */
+  --radius-2xl: 20px;
+  /* 窗口外沿比内部面板大一级，构成 Claude 的同心圆窗口外形。 */
+  --window-shell-radius: 20px;
+  --claude-shadow-rgb: 20 20 19;
+  /* Claude 的编辑感来自衬线显示字体，正文保持人文字体。 */
+  --claude-display-font:
+    "Tiempos Headline", "Copernicus", "Iowan Old Style", "Palatino Linotype", "Source Serif Pro",
+    Georgia, Cambria, "Songti SC", "Noto Serif CJK SC", SimSun, serif;
+}
+
+.style-claude.dark {
+  --claude-shadow-rgb: 0 0 0;
+}
+
+/* Claude 的层次靠色块而非投影，把既有阴影压到极淡。 */
+.style-claude .shadow-2xs {
+  --tw-shadow: 0 1px var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.04));
+}
+
+.style-claude .shadow-xs {
+  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.05));
+}
+
+.style-claude .shadow-sm {
+  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.06));
+}
+
+.style-claude .shadow-md {
+  --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.08));
+}
+
+.style-claude .shadow-lg {
+  --tw-shadow: 0 2px 6px -1px var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.09));
+}
+
+.style-claude .shadow-xl {
+  --tw-shadow: 0 4px 12px -2px var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.1));
+}
+
+.style-claude .shadow-2xl {
+  --tw-shadow: 0 8px 24px -4px var(--tw-shadow-color, rgb(var(--claude-shadow-rgb) / 0.12));
+}
+
+/* Markdown 标题是阅读面，也是 Claude 衬线显示字体最合适的落点。
+ * data-streamdown 由 Markdown 渲染器统一输出，比逐组件改字号更稳。 */
+.style-claude [data-streamdown^="heading-"] {
+  font-family: var(--claude-display-font);
+  font-weight: 400;
+  letter-spacing: -0.01em;
 }
 
 /*

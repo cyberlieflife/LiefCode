@@ -1,13 +1,48 @@
 import { useEffect, useState, useCallback } from "react";
 
-export type Theme = "light" | "dark" | "zai-light" | "zai-dark" | "system";
+export type Theme =
+  | "light"
+  | "dark"
+  | "zai-light"
+  | "zai-dark"
+  | "claude-light"
+  | "claude-dark"
+  | "system";
 export type ResolvedTheme = "light" | "dark";
+
+/**
+ * 样式主题（几何、阴影、排版）与配色主题分开。
+ * 界面上不单独暴露样式选择器：选中 Claude 配色时同时挂上 Claude 样式层。
+ */
+export type StyleTheme = "default" | "claude";
 
 const STORAGE_KEY = "zcode-theme";
 const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-zcode-browser-theme-surface";
+/** 挂在 documentElement 上的配色类，取值与 Theme 的非 system 值一一对应。 */
+const THEME_CLASS_NAMES = [
+  "theme-zai-light",
+  "theme-zai-dark",
+  "theme-claude-light",
+  "theme-claude-dark",
+] as const;
+/** 样式主题层类名，独立于配色类。 */
+const STYLE_THEME_CLASS_NAME = "style-claude";
 
 function getSystemTheme(): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+export function isClaudeTheme(theme: Theme): boolean {
+  return theme === "claude-light" || theme === "claude-dark";
+}
+
+export function resolveStyleTheme(theme: Theme): StyleTheme {
+  return isClaudeTheme(theme) ? "claude" : "default";
+}
+
+/** 不含 system 的主题直接映射明暗，供无 window 环境（如 SSR 兜底）复用。 */
+export function resolveStaticTheme(theme: Exclude<Theme, "system">): ResolvedTheme {
+  return theme === "dark" || theme === "zai-dark" || theme === "claude-dark" ? "dark" : "light";
 }
 
 export function resolveTheme(theme: Theme): ResolvedTheme {
@@ -15,7 +50,15 @@ export function resolveTheme(theme: Theme): ResolvedTheme {
     return getSystemTheme();
   }
 
-  return theme === "dark" || theme === "zai-dark" ? "dark" : "light";
+  return resolveStaticTheme(normalizeThemePreference(theme) as Exclude<Theme, "system">);
+}
+
+/** 把偏好（含 system）收敛成实际生效的主题值，用于选择配色类。 */
+export function resolveAppliedTheme(theme: Theme): Exclude<Theme, "system"> {
+  if (theme === "system") {
+    return getSystemTheme() === "dark" ? "zai-dark" : "zai-light";
+  }
+  return normalizeThemePreference(theme) as Exclude<Theme, "system">;
 }
 
 export function normalizeThemePreference(theme: Theme): Theme {
@@ -57,24 +100,28 @@ function syncBrowserThemeSurface(resolved: ResolvedTheme) {
 
 export function applyTheme(theme: Theme) {
   const resolved = resolveTheme(theme);
-  const appliedTheme =
-    theme === "system"
-      ? resolved === "dark"
-        ? "zai-dark"
-        : "zai-light"
-      : normalizeThemePreference(theme);
+  const appliedTheme = resolveAppliedTheme(theme);
   document.documentElement.classList.toggle("dark", resolved === "dark");
-  document.documentElement.classList.toggle("theme-zai-light", appliedTheme === "zai-light");
-  document.documentElement.classList.toggle("theme-zai-dark", appliedTheme === "zai-dark");
+  // 配色类按 appliedTheme 逐一收敛，避免切换时残留上一个配色类的变量。
+  for (const className of THEME_CLASS_NAMES) {
+    document.documentElement.classList.toggle(className, `theme-${appliedTheme}` === className);
+  }
+  // 样式主题层独立切换：Claude 配色带 Claude 样式，其余配色回落默认样式。
+  document.documentElement.classList.toggle(
+    STYLE_THEME_CLASS_NAME,
+    resolveStyleTheme(theme) === "claude",
+  );
   syncBrowserThemeSurface(resolved);
 }
 
-function isTheme(value: string | null): value is Theme {
+export function isTheme(value: string | null | undefined): value is Theme {
   return (
     value === "light" ||
     value === "dark" ||
     value === "zai-light" ||
     value === "zai-dark" ||
+    value === "claude-light" ||
+    value === "claude-dark" ||
     value === "system"
   );
 }

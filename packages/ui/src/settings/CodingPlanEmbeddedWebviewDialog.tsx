@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button.js";
 import { EmbeddedWebsiteHeader } from "@/components/EmbeddedWebsiteHeader.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
-import { normalizeThemePreference, resolveTheme } from "@/useTheme.js";
+import { resolveTheme } from "@/useTheme.js";
 import type { CodingPlanProviderId } from "@/settings/model-provider-section/constants.js";
 import type { CodingPlanFunnelContext } from "@/lib/codingPlanFunnelTelemetry.js";
 import {
@@ -116,10 +116,10 @@ export function CodingPlanEmbeddedWebviewDialog({
     isLoading: false,
   });
   const provider = resolveCodingPlanWebsiteProvider(providerId);
+  // 官网 webview 只认自己的 zai-light / zai-dark 两套 token，
+  // Claude 配色按明暗归一到这两套，不把主题名透传给外部页面。
   const embeddedTheme: CodingPlanEmbeddedTheme =
-    normalizeThemePreference(theme) === "zai-dark" || resolveTheme(theme) === "dark"
-      ? "zai-dark"
-      : "zai-light";
+    resolveTheme(theme) === "dark" ? "zai-dark" : "zai-light";
   const computedWebviewUrl = useMemo(() => {
     const env = readCodingPlanWebviewImportMetaEnv();
     const origin = resolveCodingPlanEmbeddedOrigin({

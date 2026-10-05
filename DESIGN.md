@@ -46,8 +46,30 @@ User-facing theme choices are:
 - System
 - Light Theme, backed by Zai Light
 - Dark Theme, backed by Zai Dark
+- Claude Light, backed by Claude Light color theme plus the Claude style theme
+- Claude Dark, backed by Claude Dark color theme plus the Claude style theme
 
 Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
+
+### Color theme and style theme
+
+Theme selection is one control, but it drives two independent CSS layers:
+
+- **Color theme**: `.theme-zai-light`, `.theme-zai-dark`, `.theme-claude-light`, `.theme-claude-dark`. Each defines the full semantic token set (142 tokens). Selecting a theme toggles exactly one color class.
+- **Style theme**: `.style-claude`. It changes geometry, elevation, and typography only, and is applied only when a Claude color theme is selected.
+
+The two layers are separable in CSS so a future style theme can be combined with any palette, but the UI exposes one selector: choosing a Claude theme applies both layers together.
+
+The Claude palette follows Anthropic's published design tokens (cream canvas, coral accent, warm ink). Some official marketing colors fall below readable contrast on the cream canvas (2.0-2.5:1), so semantic colors used as text or fills are darkened along the same hue. The coral primary fill keeps the official `#cc785c` value; its white foreground matches the contrast already shipped by the existing dark destructive button.
+
+The Claude style theme:
+
+- Replaces the radius scale with the Claude `rounded` scale: `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px. `2xl` becomes 20px instead of Claude's 16px ceiling, so dialog shells keep a visible step above the `xl` content they contain.
+- Sets `--window-shell-radius` to 20px, keeping it exactly one 4px inset above the 16px panel radius so the renderer-drawn window outline stays concentric. macOS panel radius still follows the native window corner, because that radius exists to stay concentric with the system-drawn corner.
+- Flattens the elevation scale to Claude's near-shadowless treatment while preserving ring and inset shadow composition.
+- Switches Markdown headings to a serif display stack.
+
+Style themes must not change information density, spacing rhythm, or component layout. Any style-theme rule that needs per-component geometry changes should instead override a shared token.
 
 ## Color Palette
 

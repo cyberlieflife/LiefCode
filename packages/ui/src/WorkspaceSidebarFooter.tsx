@@ -283,6 +283,16 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
                       id: "sidebar.settings.theme.zai-light",
                     })}
                   </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="claude-dark">
+                    {intl.formatMessage({
+                      id: "sidebar.settings.theme.claude-dark",
+                    })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="claude-light">
+                    {intl.formatMessage({
+                      id: "sidebar.settings.theme.claude-light",
+                    })}
+                  </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>
