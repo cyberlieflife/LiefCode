@@ -2152,6 +2152,9 @@ const zhCN: Record<string, string> = {
   "settings.modelIoFullRetention": "完整保留模型 I/O",
   "settings.modelIoFullRetentionDescription":
     "保留完整的模型请求和响应，不自动压缩、限制大小或删除旧记录。",
+  "settings.editRequiresRead": "取消编辑前读取要求",
+  "settings.editRequiresReadDescription":
+    "开启后，Agent 修改已有文件前不再强制要求先读取该文件；文件在读取后被外部修改的保护仍然生效。",
   "settings.performanceMode": "性能模式",
   "settings.performanceModeDescription": "精简渲染输出，提高性能。",
   "settings.taskAutoArchive": "自动归档旧任务",

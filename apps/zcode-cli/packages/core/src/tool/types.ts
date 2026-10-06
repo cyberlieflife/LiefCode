@@ -178,6 +178,8 @@ export interface ToolExecutionContext {
   modelCatalogPort?: ModelCatalogPort;
   runtimeTaskRegistry?: RuntimeTaskRegistry;
   readFileState?: ReadFileStateMap;
+  /** true = Edit/Write 修改已有文件前必须先 Read；缺席按 true（fail-closed）。 */
+  editRequiresReadEnabled?: boolean;
   recordReadFileStateMetadata?: (metadata: PersistedReadFileStateMetadata) => void;
   /** 记录 Skill resolved metadata；仅用于 telemetry，不改变模型可见结果。 */
   recordSkillTelemetryMetadata?: (metadata: SkillTelemetryMetadata) => void;

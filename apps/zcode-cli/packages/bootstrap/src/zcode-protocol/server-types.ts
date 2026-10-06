@@ -132,6 +132,11 @@ export interface ZCodeProtocolAgentServerContext {
   appRuntimePreferences: {
     askUserQuestionAutoResolutionEnabled: boolean;
     modelIoFullRetentionEnabled: boolean;
+    /**
+     * host 同步的「编辑前必须读取」开关。缺省 true（fail-closed）：
+     * 旧 Host 或还没来得及同步的启动窗口里保持既有的强制读取行为。
+     */
+    editRequiresReadEnabled: boolean;
     /** host 同步的 Off-Peak 工具面门禁；缺省 false（fail-closed），供 v4 冷恢复等无 host 参数的路径读取。 */
     offPeakToolEnabled: boolean;
     /**

@@ -82,6 +82,7 @@ export function GeneralSectionContent({
   zcodeInteractionBehavior,
   askUserQuestionAutoResolutionEnabled = true,
   modelIoFullRetentionEnabled = false,
+  editRequiresReadEnabled = true,
   onDataBaseDirChange,
   onSelectDataBaseDir,
   onTerminalInheritSystemProfileChange = async () => {},
@@ -106,6 +107,7 @@ export function GeneralSectionContent({
   onZCodeInteractionBehaviorChange,
   onAskUserQuestionAutoResolutionEnabledChange = async () => {},
   onModelIoFullRetentionEnabledChange = async () => {},
+  onEditRequiresReadEnabledChange = async () => {},
   onOpenOnboardingDialog,
 }: {
   localePreference: LocalePreference;
@@ -145,6 +147,7 @@ export function GeneralSectionContent({
   zcodeInteractionBehavior: ZCodeInteractionBehavior;
   askUserQuestionAutoResolutionEnabled?: boolean;
   modelIoFullRetentionEnabled?: boolean;
+  editRequiresReadEnabled?: boolean;
   onDataBaseDirChange: (dir: string) => Promise<void>;
   onSelectDataBaseDir: () => Promise<string | null>;
   onTerminalInheritSystemProfileChange: (enabled: boolean) => Promise<void>;
@@ -169,6 +172,7 @@ export function GeneralSectionContent({
   onZCodeInteractionBehaviorChange: (behavior: ZCodeInteractionBehavior) => Promise<void>;
   onAskUserQuestionAutoResolutionEnabledChange?: (enabled: boolean) => Promise<void>;
   onModelIoFullRetentionEnabledChange?: (enabled: boolean) => Promise<void>;
+  onEditRequiresReadEnabledChange?: (enabled: boolean) => Promise<void>;
   onOpenOnboardingDialog: () => void;
 }) {
   const { intl } = useZCodeIntl();
@@ -728,6 +732,22 @@ export function GeneralSectionContent({
               checked={modelIoFullRetentionEnabled}
               onCheckedChange={(checked) => {
                 void onModelIoFullRetentionEnabledChange(checked);
+              }}
+            />
+          }
+        />
+        <SettingsRow
+          label={intl.formatMessage({ id: "settings.editRequiresRead" })}
+          description={intl.formatMessage({
+            id: "settings.editRequiresReadDescription",
+          })}
+          control={
+            <Switch
+              aria-label={intl.formatMessage({ id: "settings.editRequiresRead" })}
+              // 存储字段为正向语义（true = 要求先读），开关展示反向状态。
+              checked={!editRequiresReadEnabled}
+              onCheckedChange={(checked) => {
+                void onEditRequiresReadEnabledChange(checked);
               }}
             />
           }

@@ -102,7 +102,12 @@ const writeHandler: ToolHandler = async (input, context) => {
       },
       { signal: context.abortSignal },
     );
-    assertWritableExistingFileIsFresh(filePath, read, context.readFileState);
+    assertWritableExistingFileIsFresh(
+      filePath,
+      read,
+      context.readFileState,
+      context.editRequiresReadEnabled !== false,
+    );
     originalFile = read.content;
     originalEncoding = read.encoding;
     originalLineEndings = read.lineEndings;
@@ -279,9 +284,21 @@ function assertWritableExistingFileIsFresh(
   filePath: string,
   currentRead: FileSystemReadTextResult,
   readFileState: ReadFileStateMap | undefined,
+  editRequiresRead: boolean,
 ): void {
   const lastRead = findLatestReadFileState(readFileState, filePath);
-  if (!lastRead || lastRead.isPartialView) {
+  if (!lastRead) {
+    // 「取消编辑前必须读取」后，未读过的文件直接放行。
+    if (!editRequiresRead) return;
+    throw createCoreError(CoreErrorType.ToolExecutionFailed, WRITE_NOT_READ_MESSAGE, {
+      context: {
+        code: "write_file_not_read",
+        filePath,
+      },
+      recoverable: true,
+    });
+  }
+  if (lastRead.isPartialView && editRequiresRead) {
     throw createCoreError(CoreErrorType.ToolExecutionFailed, WRITE_NOT_READ_MESSAGE, {
       context: {
         code: "write_file_not_read",

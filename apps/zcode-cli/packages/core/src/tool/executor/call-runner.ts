@@ -417,6 +417,8 @@ async function executeToolCallImpl(
       modelCatalogPort: deps.modelCatalogPort,
       runtimeTaskRegistry: deps.runtimeTaskRegistry,
       readFileState: deps.readFileState,
+      // 每次工具调用取当下偏好值，支持会话中途翻转；缺席按 true（fail-closed）。
+      editRequiresReadEnabled: deps.getEditRequiresReadEnabled?.() ?? true,
       recordReadFileStateMetadata: (metadata) => {
         readFileStateMetadata = metadata;
       },

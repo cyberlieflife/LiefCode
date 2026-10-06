@@ -116,6 +116,8 @@ export interface ToolExecutorOptions {
   modelCatalogPort?: ModelCatalogPort;
   runtimeTaskRegistry?: RuntimeTaskRegistry;
   readFileState?: ReadFileStateMap;
+  /** 「编辑前必须读取」偏好的当下值；缺席按 true（fail-closed）。 */
+  getEditRequiresReadEnabled?: () => boolean;
   /** 技能门的探针（ToolInputResolutionContext.hasLoadedSkill）；runtime 按 provider 可见历史回答。 */
   hasLoadedSkill?: (skillName: string) => boolean;
   subagentBackgroundBashMaxMs?: number;
@@ -222,6 +224,8 @@ export interface ToolExecutorDeps {
   modelCatalogPort?: ModelCatalogPort;
   runtimeTaskRegistry?: RuntimeTaskRegistry;
   readFileState: ReadFileStateMap;
+  /** 「编辑前必须读取」偏好的当下值；缺席按 true（fail-closed）。 */
+  getEditRequiresReadEnabled?: () => boolean;
   hasLoadedSkill?: (skillName: string) => boolean;
   subagentBackgroundBashMaxMs?: number;
   bashShellSelection?: ExecutionShellSelection;

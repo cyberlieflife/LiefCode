@@ -211,6 +211,11 @@ export interface AgentRuntimeConfig {
    * false 会关闭十个工作流工具，不改变其他工具的注册策略。
    */
   dynamicWorkflowEnabled?: boolean;
+  /**
+   * 「编辑前必须读取」开关：true = Edit/Write 修改已有文件前必须先 Read（既有行为），
+   * 缺席按 true（fail-closed）；false = 允许未读过直接修改，「读后内容变化」的 STALE 保护仍在。
+   */
+  editRequiresReadEnabled?: boolean;
 
   // Context Builder config
   systemPrompt?: string;

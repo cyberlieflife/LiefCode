@@ -274,6 +274,8 @@ export function createDefaultSubagentPort(
           // 父 registry 可见的工具名）本来就够，但**自定义 agent profile 显式写
           // `allowedTools: ["CreateWorkflow"]` 时会跳过那次交集**，只剩这一道能挡住。
           dynamicWorkflowEnabled: this.config.dynamicWorkflowEnabled,
+          // 「编辑前必须读取」开关与父会话保持一致，避免主/子会话对同一文件行为分裂。
+          editRequiresReadEnabled: this.config.editRequiresReadEnabled,
           // 默认 subagent 已从 Explore 调整为 general-purpose。
           // toolset 不能再依赖 DEFAULT_SUBAGENT_TYPE，否则默认通用 agent 会被误降级为只读搜索工具面。
           toolset: builtInExplore ? "explore" : "main",

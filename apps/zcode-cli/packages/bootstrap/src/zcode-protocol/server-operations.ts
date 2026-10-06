@@ -3403,6 +3403,7 @@ async function createRecord(
     traceContext,
     version: context.deps.version,
     modelIoFullRetentionEnabled: context.appRuntimePreferences.modelIoFullRetentionEnabled,
+    editRequiresReadEnabled: context.appRuntimePreferences.editRequiresReadEnabled,
   });
   const now = Date.now();
   const record: ZCodeProtocolSessionRecord = {

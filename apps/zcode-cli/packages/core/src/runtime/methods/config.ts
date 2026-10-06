@@ -113,6 +113,11 @@ export function setWorkingDirectory(this: AgentRuntimeInternal, cwd: string): vo
   this.workingDirectory = cwd;
 }
 
+export function setEditRequiresReadEnabled(this: AgentRuntimeInternal, enabled: boolean): void {
+  // 只写运行态 config，executor getter 每次工具调用读取当下值；不落盘也不发事件。
+  this.config.editRequiresReadEnabled = enabled;
+}
+
 export async function ensureSessionPersistedForExternalActivity(
   this: AgentRuntimeInternal,
   input: string,

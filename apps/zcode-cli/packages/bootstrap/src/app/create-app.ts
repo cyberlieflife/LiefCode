@@ -259,6 +259,8 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         workingDirectory,
         workspaceIdentity: options.runtimeConfig?.memory?.workspaceIdentity,
       });
+    // 缺省 true（fail-closed）：协议偏好同步前的窗口里保持既有的强制读取行为。
+    runtimeConfig.editRequiresReadEnabled = options.editRequiresReadEnabled ?? true;
     const browserControlPort = options.browserControlPort;
     if (
       browserControlPort &&
@@ -998,6 +1000,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         workspaceHookRuntimeSecurity?.reloadTrust() ?? Promise.resolve(),
       setModelIoFullRetentionEnabled: (enabled) =>
         modelAdapter.setModelIoFullRetentionEnabled(enabled),
+      setEditRequiresReadEnabled: (enabled) => getRuntime().setEditRequiresReadEnabled(enabled),
       readToolResultArtifact: (uri) =>
         artifactStore.readToolResultArtifact({ uri, trace: traceContext }),
       // wire/staging 全程是 decoded chunk；只有完整 checksum commit 后才在

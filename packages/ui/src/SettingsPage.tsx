@@ -702,6 +702,7 @@ export function SettingsPage({
   const askUserQuestionAutoResolutionEnabled =
     sharedSettings?.askUserQuestionAutoResolutionEnabled !== false;
   const modelIoFullRetentionEnabled = sharedSettings?.modelIoFullRetentionEnabled === true;
+  const editRequiresReadEnabled = sharedSettings?.editRequiresReadEnabled !== false;
   const [dataBaseDir, setDataBaseDir] = useState("");
   const [terminalInheritSystemProfile, setTerminalInheritSystemProfile] = useState(true);
   const [terminalFontFamily, setTerminalFontFamily] = useState("");
@@ -934,6 +935,22 @@ export function SettingsPage({
         action: "toggle_model_io_retention",
         trigger: "switch",
         operation: () => updateSharedSettings({ modelIoFullRetentionEnabled: enabled }),
+        completed: {
+          resultSource: "shared_settings",
+          stateAfter: enabled ? "enabled" : "disabled",
+        },
+      });
+    },
+    [updateSharedSettings],
+  );
+  // enabled 是「取消编辑前读取要求」开关的状态；存储字段为正向语义，取反向写入。
+  const handleEditRequiresReadEnabledChange = useCallback(
+    async (enabled: boolean) => {
+      await runSettingsActionAsync({
+        featureId: "settings.conversation",
+        action: "toggle_edit_read_requirement",
+        trigger: "switch",
+        operation: () => updateSharedSettings({ editRequiresReadEnabled: !enabled }),
         completed: {
           resultSource: "shared_settings",
           stateAfter: enabled ? "enabled" : "disabled",
@@ -1783,6 +1800,7 @@ export function SettingsPage({
                               askUserQuestionAutoResolutionEnabled
                             }
                             modelIoFullRetentionEnabled={modelIoFullRetentionEnabled}
+                            editRequiresReadEnabled={editRequiresReadEnabled}
                             onDataBaseDirChange={handleDataBaseDirChange}
                             onSelectDataBaseDir={selectDirectory}
                             onTerminalInheritSystemProfileChange={
@@ -1795,6 +1813,9 @@ export function SettingsPage({
                             }
                             onModelIoFullRetentionEnabledChange={
                               handleModelIoFullRetentionEnabledChange
+                            }
+                            onEditRequiresReadEnabledChange={
+                              handleEditRequiresReadEnabledChange
                             }
                             onHttpProxyChange={handleHttpProxyChange}
                             onHttpProxyNoProxyChange={handleHttpProxyNoProxyChange}

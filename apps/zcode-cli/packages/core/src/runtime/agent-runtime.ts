@@ -355,6 +355,8 @@ export interface AgentRuntime {
   getSessionModelSelection(): ModelSelection | undefined;
   setSessionModelSelection(selection: ModelSelection | undefined): void;
   getProjectId(): ProjectId;
+  /** 更新「编辑前必须读取」运行态；声明合并接口面，bootstrap 经 app setter 调用。 */
+  setEditRequiresReadEnabled(enabled: boolean): void;
   ensureSessionPersistedForExternalActivity(
     input: string,
     options?: { traceContext?: TraceContext },

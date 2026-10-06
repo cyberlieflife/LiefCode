@@ -142,6 +142,8 @@ export interface ZCodeAppOptions {
   /** 新 Session 使用的 Environment 默认选择；仅在没有显式 runtime modelSelection 时参与初始化。 */
   configuredDefaultModelSelection?: ModelSelection;
   modelIoFullRetentionEnabled?: boolean;
+  /** true = 编辑前必须先读取（既有行为）；缺省按 true（fail-closed）。 */
+  editRequiresReadEnabled?: boolean;
   /** 同进程嵌入宿主可注入完整的 borrowed 进程级 Owner；Endpoint 配置不得覆盖它。 */
   telemetryOwner?: AgentTelemetryRuntimeOwner;
   /**
@@ -614,6 +616,8 @@ export interface ZCodeApp {
     traceId: TraceContext["traceId"];
   }>;
   setModelIoFullRetentionEnabled?(enabled: boolean): void;
+  /** 更新「编辑前必须读取」运行态；协议偏好同步对活跃 session 调用。 */
+  setEditRequiresReadEnabled?(enabled: boolean): void;
   setModel(
     modelId: string | ModelSelection,
     options?: {

@@ -551,6 +551,8 @@ export type ZCodeAgentServiceEvent =
 export interface ZCodeAgentAppRuntimePreferences {
   askUserQuestionAutoResolutionEnabled: boolean;
   modelIoFullRetentionEnabled?: boolean;
+  /** true = 编辑前必须先读取（既有行为）；缺省按 true 兼容旧调用方。 */
+  editRequiresReadEnabled?: boolean;
 }
 
 export interface ZCodeAgentLocalRuntimeChildProcesses {

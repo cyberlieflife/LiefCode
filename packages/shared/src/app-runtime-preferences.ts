@@ -7,6 +7,8 @@ export const appRuntimePreferencesChangedBroadcastPayloadSchema = z
   .object({
     askUserQuestionAutoResolutionEnabled: z.boolean(),
     modelIoFullRetentionEnabled: z.boolean().default(false),
+    // 缺省按 true（强制读取）兼容旧广播消息。
+    editRequiresReadEnabled: z.boolean().default(true),
   })
   .strict();
 

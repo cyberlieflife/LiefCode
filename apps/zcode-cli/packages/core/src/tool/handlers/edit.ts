@@ -172,7 +172,12 @@ const editHandler: ToolHandler = async (input, context) => {
         "Cannot create new file - file already exists.",
       );
     }
-    const readStateFailure = getEditableReadStateFailure(filePath, read, context.readFileState);
+    const readStateFailure = getEditableReadStateFailure(
+      filePath,
+      read,
+      context.readFileState,
+      context.editRequiresReadEnabled !== false,
+    );
     if (readStateFailure) return readStateFailure;
     return writeEditResult({
       context,
@@ -197,7 +202,12 @@ const editHandler: ToolHandler = async (input, context) => {
     );
   }
 
-  const readStateFailure = getEditableReadStateFailure(filePath, read, context.readFileState);
+  const readStateFailure = getEditableReadStateFailure(
+    filePath,
+    read,
+    context.readFileState,
+    context.editRequiresReadEnabled !== false,
+  );
   if (readStateFailure) return readStateFailure;
 
   const patchMatchStartedAt = Date.now();
@@ -422,11 +432,17 @@ function getEditableReadStateFailure(
   filePath: string,
   currentRead: FileSystemReadTextResult,
   readFileState: ReadFileStateMap | undefined,
+  editRequiresRead: boolean,
 ): ToolHandlerFailure | undefined {
   if (!readFileState) return undefined;
 
   const lastRead = findEditableReadFileState(readFileState, filePath);
-  if (!lastRead || lastRead.isPartialView) {
+  if (!lastRead) {
+    // 「取消编辑前必须读取」后，未读过的文件直接放行。
+    if (!editRequiresRead) return undefined;
+    return editFailure(EditErrorCode.FILE_NOT_READ, EDIT_NOT_READ_MESSAGE);
+  }
+  if (lastRead.isPartialView && editRequiresRead) {
     return editFailure(EditErrorCode.FILE_NOT_READ, EDIT_NOT_READ_MESSAGE);
   }
 

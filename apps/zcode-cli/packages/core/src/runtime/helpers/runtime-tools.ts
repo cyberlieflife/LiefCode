@@ -198,6 +198,8 @@ function createRuntimeToolExecutor(
     modelCatalogPort: deps.modelCatalogPort,
     runtimeTaskRegistry: runtime.runtimeTaskRegistry,
     readFileState: runtime.readFileState,
+    // 「编辑前必须读取」是可在会话中途翻转的偏好，getter 让每次工具调用取当下值。
+    getEditRequiresReadEnabled: () => runtime.config.editRequiresReadEnabled ?? true,
     // 工作流创作工具的技能门（tool/handlers/workflow-skill-gate.ts）：按模型此刻看得见的历史回答
     // 「读过技能没有」。只在会话真有 Skill 工具时给探针——没有 skillPort 的会话装不上那个技能，
     // 门若仍然在场就成了一道谁也过不去的墙。

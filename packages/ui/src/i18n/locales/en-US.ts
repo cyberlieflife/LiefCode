@@ -2290,6 +2290,9 @@ const enUS: Record<string, string> = {
   "settings.modelIoFullRetention": "Keep complete model I/O",
   "settings.modelIoFullRetentionDescription":
     "Keep complete model requests and responses without compression, size limits, or automatic deletion.",
+  "settings.editRequiresRead": "Skip read-before-edit requirement",
+  "settings.editRequiresReadDescription":
+    "When enabled, the Agent can modify existing files without reading them first. Protection against externally modified files still applies.",
   "settings.performanceMode": "Performance mode",
   "settings.performanceModeDescription": "Simplify rendered output to improve performance.",
   "settings.taskAutoArchive": "Auto-archive old tasks",

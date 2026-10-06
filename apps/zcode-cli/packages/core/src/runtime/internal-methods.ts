@@ -83,6 +83,7 @@ export interface AgentRuntimeCoreMethods {
   setSessionModelSelection(selection: ModelSelection | undefined): void;
   getProjectId(): ProjectId;
   setWorkingDirectory(cwd: string): void;
+  setEditRequiresReadEnabled(enabled: boolean): void;
   ensureSessionPersistedForExternalActivity(
     input: string,
     options?: { traceContext?: TraceContext },

@@ -2234,6 +2234,28 @@ export type ZCodeWorkspaceUpdateModelIoPreferencesResult = z.infer<
   typeof zcodeWorkspaceUpdateModelIoPreferencesResultSchema
 >;
 
+// 「编辑前必须读取文件」开关：true = 保持既有强制读取；false = 允许未读过直接 Edit/Write。
+export const zcodeWorkspaceUpdateEditReadPolicyParamsSchema = z
+  .object({
+    workspace: zcodeWorkspaceRefSchema,
+    editRequiresReadEnabled: z.boolean(),
+  })
+  .strict();
+export type ZCodeWorkspaceUpdateEditReadPolicyParams = z.infer<
+  typeof zcodeWorkspaceUpdateEditReadPolicyParamsSchema
+>;
+
+export const zcodeWorkspaceUpdateEditReadPolicyResultSchema = z
+  .object({
+    workspace: zcodeWorkspaceRefSchema,
+    editRequiresReadEnabled: z.boolean(),
+    updatedSessionCount: z.number().int().nonnegative(),
+  })
+  .strict();
+export type ZCodeWorkspaceUpdateEditReadPolicyResult = z.infer<
+  typeof zcodeWorkspaceUpdateEditReadPolicyResultSchema
+>;
+
 export const zcodeWorkspaceUpdateOffPeakToolPolicyParamsSchema = z
   .object({
     workspace: zcodeWorkspaceRefSchema,
@@ -3603,6 +3625,9 @@ export const zcodeProtocolMethods = {
   providerUpdateAccountConfig: "provider/updateAccountConfig",
   workspaceUpdateInteractionPreferences: "workspace/updateInteractionPreferences",
   workspaceUpdateModelIoPreferences: "workspace/updateModelIoPreferences",
+  // 「编辑前必须读取文件」开关是 workspace 级事实，由 host 随 App Runtime Preferences 同步；
+  // 旧 CLI method-not-found → host 降级忽略，保持强制读取的既有行为。
+  workspaceUpdateEditReadPolicy: "workspace/updateEditReadPolicy",
   // Off-Peak 工具面门禁是 workspace 级事实（灰度 + 本地/远程），由 host 在 agent 就绪时同步；
   // CLI 对 legacy create/resume 与 v4 冷恢复统一读取。旧 CLI method-not-found → host 降级忽略。
   workspaceUpdateOffPeakToolPolicy: "workspace/updateOffPeakToolPolicy",
