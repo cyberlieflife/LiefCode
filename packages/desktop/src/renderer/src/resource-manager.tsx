@@ -5,9 +5,12 @@ import {
   ResourceManagerApp,
   ZCodeIntlProvider,
   applyTheme,
+  applyUiFontFamily,
   applyUiFontSizePx,
   isTheme,
+  loadUiFontFamily,
   loadUiFontSizePx,
+  subscribeToUiFontFamilyStorageChanges,
   subscribeToUiFontSizeStorageChanges,
 } from "@zcode/ui";
 
@@ -33,6 +36,10 @@ applyResourceManagerTheme();
 // 首屏前显式应用，运行中再由 storage 事件同步，且不改变 html font-size 或接入业务 Host。
 applyUiFontSizePx(loadUiFontSizePx());
 subscribeToUiFontSizeStorageChanges();
+// 界面字体同理：独立窗口也要跟随主窗口写入的偏好。
+const resourceManagerFontFamily = loadUiFontFamily();
+applyUiFontFamily(resourceManagerFontFamily.latin, resourceManagerFontFamily.cjk);
+subscribeToUiFontFamilyStorageChanges();
 
 const root = document.getElementById("root");
 if (root) {

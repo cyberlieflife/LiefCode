@@ -7,7 +7,10 @@
     "sha256": "1564074e13439397221ffd522e2e504d56561994a23d371aa5e3ad43e4f5423f",
     "importRevision": null,
     "provenance": "The original copy revision is not recorded in the current checkout; this pinned license reference is not asserted to be the original import version.",
-    "roots": ["packages/ui/src/components/ui", "packages/ui/src/styles.css"],
+    "roots": [
+      "packages/ui/src/components/ui",
+      "packages/ui/src/styles.css"
+    ],
     "scope": "Upstream-derived portions only; ZCode-specific files in the same directory are not attributed to the upstream project.",
     "license": "MIT"
   },
@@ -19,7 +22,10 @@
     "sha256": "b4f9adb7c568904834d0dd6cc98d16c390d21ca32fc17ae7a267715269bd5529",
     "importRevision": null,
     "provenance": "The original copy revision is not recorded in the current checkout; this pinned license reference is not asserted to be the original import version.",
-    "roots": ["packages/ui/src/components/ai-elements", ".agents/skills/ai-elements"],
+    "roots": [
+      "packages/ui/src/components/ai-elements",
+      ".agents/skills/ai-elements"
+    ],
     "scope": "Upstream-derived UI components, skill instructions, reference documentation and example scripts only; locally adapted for ZCode imports, styling and agent workflow. Original import revision not recorded.",
     "license": "Apache-2.0",
     "modifiedFiles": [
@@ -166,7 +172,9 @@
   },
   {
     "id": "Fig autocomplete registry",
-    "roots": ["apps/zcode-cli/packages/core/src/tool/handlers/generated/bash-command-registry.ts"],
+    "roots": [
+      "apps/zcode-cli/packages/core/src/tool/handlers/generated/bash-command-registry.ts"
+    ],
     "license": "MIT",
     "source": "https://raw.githubusercontent.com/withfig/autocomplete/aef52acff84c45edde61ae610cc2c964802b9a38/LICENSE",
     "file": "third-party/upstream/5129f8779dca579cfcb235570688a2f15822b270575e04f27ef906aabbcc0355.txt",
@@ -195,7 +203,11 @@
     "sha256": "014bb31e83d5c2e76aea1cc6e82217346ab41362f32cb355ad0f5c10aa0aeaff",
     "importRevision": null,
     "provenance": "Original import revision is not recorded. This pinned upstream license/source reference is not asserted to be the original import version.",
-    "roots": [".agents/skills/agent-browser", ".agents/skills/dogfood", ".agents/skills/electron"],
+    "roots": [
+      ".agents/skills/agent-browser",
+      ".agents/skills/dogfood",
+      ".agents/skills/electron"
+    ],
     "scope": "Upstream-derived instructions, reference documents and shell templates; locally adapted for the ZCode workspace. Reference release v0.20.0 contains all three skills.",
     "license": "Apache-2.0",
     "modifiedFiles": [
@@ -246,9 +258,53 @@
     "referenceRevision": "063bee94c3f4df8453406c830b0a7df0f2860278",
     "source": "https://github.com/vercel-labs/agent-skills/tree/063bee94c3f4df8453406c830b0a7df0f2860278",
     "importRevision": null,
-    "roots": [".agents/skills/react-best-practices"],
+    "roots": [
+      ".agents/skills/react-best-practices"
+    ],
     "license": "MIT",
     "scope": "Vendored React/Next.js guidance and local adaptations; local README preserves Shu Ding / Vercel attribution.",
     "reviewRequired": "Pinned upstream README and skill declare MIT, but a complete original copyright/license notice has not been obtained."
+  },
+  {
+    "id": "OpenDyslexic",
+    "referenceRevision": "5.3.0",
+    "source": "https://github.com/antijingoist/opendyslexic",
+    "file": "third-party/upstream/797cb441b593b3326a69fcf83d84264301d89e8871a75b38bae1d101e922e10c.txt",
+    "sha256": "797cb441b593b3326a69fcf83d84264301d89e8871a75b38bae1d101e922e10c",
+    "importRevision": null,
+    "provenance": "Bundled as woff2 via @fontsource/opendyslexic 5.3.0; the pinned license is the upstream SIL Open Font License text.",
+    "roots": [
+      "packages/ui/src/assets/fonts/opendyslexic"
+    ],
+    "scope": "Bundled font binaries only.",
+    "license": "OFL-1.1"
+  },
+  {
+    "id": "Noto Serif SC",
+    "referenceRevision": "main@2026-10-06",
+    "source": "https://github.com/google/fonts/tree/main/ofl/notoserifsc",
+    "file": "third-party/upstream/5e0da210fb04058a8c0087985d2d456b931c2579811a49655721d3cf0c36b6d6.txt",
+    "sha256": "5e0da210fb04058a8c0087985d2d456b931c2579811a49655721d3cf0c36b6d6",
+    "importRevision": null,
+    "provenance": "Subset to the GB2312 common character set from the upstream variable font; the pinned license is the upstream SIL Open Font License text.",
+    "roots": [
+      "packages/ui/src/assets/fonts/noto-serif-sc"
+    ],
+    "scope": "Bundled font binaries only; the subset retains the original outlines for the retained characters.",
+    "license": "OFL-1.1"
+  },
+  {
+    "id": "Smiley Sans",
+    "referenceRevision": "v2.0.1",
+    "source": "https://github.com/atelier-anchor/smiley-sans",
+    "file": "third-party/upstream/9401f4050f1b66c26b6ccdc8b0e14a3c1cc37aac122eda84386f25854a9bec72.txt",
+    "sha256": "9401f4050f1b66c26b6ccdc8b0e14a3c1cc37aac122eda84386f25854a9bec72",
+    "importRevision": null,
+    "provenance": "Bundled as the upstream woff2 build from the v2.0.1 release.",
+    "roots": [
+      "packages/ui/src/assets/fonts/smiley-sans"
+    ],
+    "scope": "Bundled font binaries only.",
+    "license": "OFL-1.1"
   }
 ]

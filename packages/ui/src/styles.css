@@ -43,6 +43,42 @@
 /* 云端模板常用样式的构建保障，不是运行时 class 白名单。 */
 @source inline("text-center text-ui-base/relaxed text-foreground-subtle font-semibold font-normal text-foreground whitespace-nowrap underline decoration-foreground-subtle decoration-dashed underline-offset-4");
 
+/*
+ * 界面字体设置的可选字体随应用分发，保证用户选中即生效，不依赖本机是否安装。
+ * 思源宋体按 GB2312 常用字集裁剪为单一可变字重文件（wght 200-900）。
+ */
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/opendyslexic/opendyslexic-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "OpenDyslexic";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/opendyslexic/opendyslexic-latin-700-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Noto Serif SC";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("./assets/fonts/noto-serif-sc/noto-serif-sc-gb2312.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Smiley Sans Oblique";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/smiley-sans/smiley-sans-oblique.woff2") format("woff2");
+}
+
 /* 磨砂玻璃效果：html/body 需要透明背景，让 Electron vibrancy 透出来 */
 html,
 body,
@@ -56,6 +92,12 @@ body,
 
 :root {
   --ui-font-size: 14px;
+  /* 界面字体：英文栈与中文栈分开，由外观设置分别选择，组合成 --font-sans。
+   * 默认值与 Tailwind 原生栈一致，未选择时表现不变。 */
+  --ui-font-latin: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
+  --ui-font-cjk:
+    "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans CJK SC",
+    "Source Han Sans SC", sans-serif;
   /* 窗口外壳圆角默认与 Linux 既有 16px 同心圆一致；
    * 样式主题（如 Claude）在 .style-claude 里覆盖成更大的窗口外形。 */
   --window-shell-radius: 16px;
@@ -138,6 +180,12 @@ body {
 /* === 主题变量 === */
 
 @theme {
+  /* 界面字体由外观设置分别选择英文与中文栈，这里只做组合。
+   * 末尾保留 emoji 字体，避免替换字体栈后表情符号回退到系统默认字形。
+   * 两段栈都含通用族名兜底，未选择时与 Tailwind 原生栈表现一致。 */
+  --font-sans:
+    var(--ui-font-latin), var(--ui-font-cjk), "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
   /* Windows 的 Consolas 不含中文字形，Tailwind 默认栈最终会让中文落到宋体。
    * 保留各平台西文等宽字体，并在通用 monospace 前显式加入各平台 CJK 无衬线字体。 */
   --font-mono:

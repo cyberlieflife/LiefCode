@@ -207,6 +207,13 @@ The dynamic-workflow timeline draws with a feature-scoped token family:
 - **UI Sans**: use the app's default `font-sans` stack for almost all interface text.
 - **UI Mono**: use `font-mono` for paths, commands, code, identifiers, shortcuts, commit hashes, model IDs, and terminal-like data.
 
+The Appearance setting exposes separate Latin and Chinese interface font choices. Both
+write into `--ui-font-latin` and `--ui-font-cjk`, which `--font-sans` composes in that
+order. Never hardcode a font family on a container: an explicit `font-family` there
+overrides the composed stack and silently ignores the setting. Bundled choices
+(OpenDyslexic, Noto Serif SC, Smiley Sans) ship as `@font-face` assets under
+`packages/ui/src/assets/fonts/`; `--font-mono` and code content are never affected.
+
 ### UI font tokens
 
 All interface typography must use the dedicated `text-ui-*` scale. The Appearance setting controls `--ui-font-size`, whose default is `14px`:

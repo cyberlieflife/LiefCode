@@ -22,6 +22,8 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import type { CodePreviewSettings } from "@/store/index.js";
 import { THEME_MODES } from "@/settings/settingsPageConfig.js";
 import { MAX_UI_FONT_SIZE_PX, MIN_UI_FONT_SIZE_PX } from "@/lib/uiFontSize.js";
+import { UiFontFamilySetting } from "@/settings/UiFontFamilySetting.js";
+import type { UiFontFamilyCjk, UiFontFamilyLatin } from "@/lib/uiFontFamily.js";
 
 function FontSizeInput({
   value,
@@ -85,6 +87,10 @@ export function AppearanceSectionContent({
   setTheme,
   uiFontSizePx,
   setUiFontSizePx,
+  uiFontFamilyLatin,
+  setUiFontFamilyLatin,
+  uiFontFamilyCjk,
+  setUiFontFamilyCjk,
 }: {
   codePreviewSettings: CodePreviewSettings;
   setCodePreviewSettings: (settings: Partial<CodePreviewSettings>) => void;
@@ -92,6 +98,10 @@ export function AppearanceSectionContent({
   setTheme: (theme: Theme) => void;
   uiFontSizePx: number;
   setUiFontSizePx: (fontSizePx: number) => void;
+  uiFontFamilyLatin: UiFontFamilyLatin;
+  setUiFontFamilyLatin: (family: UiFontFamilyLatin) => void;
+  uiFontFamilyCjk: UiFontFamilyCjk;
+  setUiFontFamilyCjk: (family: UiFontFamilyCjk) => void;
 }) {
   const { intl } = useZCodeIntl();
   const activePreviewMode = resolveTheme(theme);
@@ -154,6 +164,13 @@ export function AppearanceSectionContent({
             />
           </CardContent>
         </Card>
+
+        <UiFontFamilySetting
+          uiFontFamilyLatin={uiFontFamilyLatin}
+          uiFontFamilyCjk={uiFontFamilyCjk}
+          onUiFontFamilyLatinChange={setUiFontFamilyLatin}
+          onUiFontFamilyCjkChange={setUiFontFamilyCjk}
+        />
       </div>
 
       <div className="space-y-6">

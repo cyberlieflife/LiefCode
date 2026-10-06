@@ -2123,6 +2123,18 @@ const enUS: Record<string, string> = {
   "settings.uiFontSize": "UI font size",
   "settings.uiFontSizeDescription":
     "Adjust interface text without changing icons or layout dimensions.",
+  "settings.uiFontFamily.latinTitle": "Latin interface font",
+  "settings.uiFontFamily.latinDescription":
+    "Choose the font used for Latin letters, digits, and symbols. Chinese text follows the setting below.",
+  "settings.uiFontFamily.cjkTitle": "Chinese interface font",
+  "settings.uiFontFamily.cjkDescription": "Choose the font used for Chinese characters.",
+  "settings.uiFontFamily.option.latin.system": "System default",
+  "settings.uiFontFamily.option.latin.anthropic-serif": "Anthropic Serif",
+  "settings.uiFontFamily.option.latin.opendyslexic": "OpenDyslexic",
+  "settings.uiFontFamily.option.cjk.system": "System default",
+  "settings.uiFontFamily.option.cjk.noto-serif-sc": "Noto Serif SC",
+  "settings.uiFontFamily.option.cjk.microsoft-yahei": "Microsoft YaHei",
+  "settings.uiFontFamily.option.cjk.smiley-sans": "Smiley Sans",
   "settings.systemTitle": "General",
   "settings.systemDescription": "These preferences affect the current window experience.",
   "settings.locale": "Language",

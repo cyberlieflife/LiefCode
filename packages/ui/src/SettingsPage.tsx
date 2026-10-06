@@ -104,6 +104,10 @@ import {
   resolveSettingsSectionForPlatform,
 } from "./settingsPageHelpers.js";
 import { AppearanceSectionContent } from "./settingsCodePreview.js";
+import {
+  normalizeUiFontFamilyCjk,
+  normalizeUiFontFamilyLatin,
+} from "@/lib/uiFontFamily.js";
 import type { SettingsSectionId } from "@/lib/settingsNavigation.js";
 import { requestPluginStoreOpen } from "@/lib/pluginStoreNavigation.js";
 import {
@@ -343,6 +347,10 @@ export function SettingsPage({
   const setCodePreviewSettings = useZCodeStore((state) => state.setCodePreviewSettings);
   const uiFontSizePx = useZCodeStore((state) => state.uiFontSizePx);
   const setUiFontSizePx = useZCodeStore((state) => state.setUiFontSizePx);
+  const uiFontFamilyLatin = useZCodeStore((state) => state.uiFontFamilyLatin);
+  const setUiFontFamilyLatin = useZCodeStore((state) => state.setUiFontFamilyLatin);
+  const uiFontFamilyCjk = useZCodeStore((state) => state.uiFontFamilyCjk);
+  const setUiFontFamilyCjk = useZCodeStore((state) => state.setUiFontFamilyCjk);
   const notificationEnabled = useZCodeStore((state) => state.notificationEnabled);
   const setNotificationEnabled = useZCodeStore((state) => state.setNotificationEnabled);
   const notificationSoundEnabled = useZCodeStore((state) => state.notificationSoundEnabled);
@@ -1328,6 +1336,23 @@ export function SettingsPage({
     },
     [setCodePreviewSettings],
   );
+  const handleUiFontFamilyChange = useCallback(
+    (kind: "latin" | "cjk", value: string) =>
+      runUserAction({
+        input: {
+          featureId: "settings.appearance",
+          action: kind === "latin" ? "change_ui_font_latin" : "change_ui_font_cjk",
+          trigger: "select",
+        },
+        operation: () =>
+          kind === "latin"
+            ? setUiFontFamilyLatin(normalizeUiFontFamilyLatin(value))
+            : setUiFontFamilyCjk(normalizeUiFontFamilyCjk(value)),
+        completed: { resultSource: "local_commit", valueAfter: value },
+        failureStage: "local_commit",
+      }),
+    [setUiFontFamilyCjk, setUiFontFamilyLatin],
+  );
   const activeSectionMeta = settingsSections.find((section) => section.id === activeSection);
   // 灰度裁决异步到达：sections 列表可能在挂载后变化（如 computerUse 区被灰度移除）。
   // 若用户正停留在被移除的 section，回落到第一个可见区，避免整页 return null。
@@ -1798,6 +1823,12 @@ export function SettingsPage({
                                 failureStage: "local_commit",
                               })
                             }
+                            uiFontFamilyLatin={uiFontFamilyLatin}
+                            setUiFontFamilyLatin={(value) =>
+                              handleUiFontFamilyChange("latin", value)
+                            }
+                            uiFontFamilyCjk={uiFontFamilyCjk}
+                            setUiFontFamilyCjk={(value) => handleUiFontFamilyChange("cjk", value)}
                           />
                         ) : activeSection === "shortcuts" ? (
                           <ShortcutSettingsSection isDesktop={Boolean(isDesktop)} />

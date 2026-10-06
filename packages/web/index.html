@@ -75,12 +75,17 @@
       body {
         background: var(--zcode-bootstrap-bg, var(--color-background, #0f172a));
         color: var(--zcode-bootstrap-fg, var(--color-foreground, #e2e8f0));
-        font-family:
+        /* body 上的显式字体族会覆盖 html 的 --default-font-family，
+           界面字体设置必须在这里也走同一组变量，否则 Web 端选择不生效。
+           样式表尚未加载时回退到原有的固定栈，首屏观感不变。 */
+        font-family: var(
+          --font-sans,
           Inter,
           -apple-system,
           BlinkMacSystemFont,
           "Segoe UI",
-          sans-serif;
+          sans-serif
+        );
       }
 
       html[data-zcode-bootstrap-theme="light"] body {
