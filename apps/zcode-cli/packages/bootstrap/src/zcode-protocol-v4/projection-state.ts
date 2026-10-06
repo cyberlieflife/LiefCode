@@ -80,6 +80,7 @@ export function createInitialConversationSnapshot(
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
       },
+      lastRequest: null,
     },
     queue: { items: [], autoDrain: true },
     pendingInteractions: [],

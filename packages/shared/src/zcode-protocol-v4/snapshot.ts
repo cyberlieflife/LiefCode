@@ -186,6 +186,8 @@ export type SessionMetaState = z.infer<typeof sessionMetaStateSchema>;
 export type { SharedContextImportState } from "./shared-context-import.js";
 
 // ── usage。conflation：值未变不下发──
+// lastRequest 记录最近一次主会话模型请求的输出速率与完成时刻，供右上角
+// Agent 状态面板常驻显示；null = 尚无主会话请求完成（旧快照也缺此字段）。
 export const sessionUsageStateSchema = z.object({
   contextWindow: z
     .object({
@@ -202,8 +204,16 @@ export const sessionUsageStateSchema = z.object({
     cacheReadTokens: z.number(),
     cacheWriteTokens: z.number(),
   }),
+  lastRequest: z
+    .object({
+      outputTokensPerSecond: z.number().nullable(),
+      completedAt: z.number(),
+    })
+    .nullable()
+    .default(null),
 });
 export type SessionUsageState = z.infer<typeof sessionUsageStateSchema>;
+export type SessionUsageLastRequest = NonNullable<SessionUsageState["lastRequest"]>;
 
 // ── queue（不持久化，裁决：CLI 进程死亡即丢，客户端对账后由用户决定重发）──
 export const queueItemSchema = conversationInputIntentSchema.extend({

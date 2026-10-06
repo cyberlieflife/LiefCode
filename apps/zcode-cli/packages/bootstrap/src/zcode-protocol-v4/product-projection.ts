@@ -63,6 +63,7 @@ import {
 // 会在 packages/ui 的 Desktop 构建链解析失败，App 重启后打不开。）
 import { verdictWorkspaceHookReviewRequest } from "@zcode/shared/workspace-hook-review-monotonicity";
 import {
+  calculateOutputTps,
   extractPlanStepsFromToolInput,
   extractPlanStepsFromToolOutput,
   isZCodeModelRetryRecoveryProgressPayload,
@@ -398,6 +399,11 @@ function nonNegativeInteger(value: number, fallback: number): number {
   return Number.isFinite(value) && value >= 0 ? Math.floor(value) : fallback;
 }
 
+/** 未知值返回 undefined（区别于 nonNegativeInteger 的 fallback 语义），供速率计算使用。 */
+function finiteNonNegative(value: number | undefined): number | undefined {
+  return value !== undefined && Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
 interface FileToolInputPreviewState {
   lastPublishedAt: number | null;
   pendingAppend: string;
@@ -674,6 +680,7 @@ export class ProductProjection {
               }
             : null,
           cumulative,
+          lastRequest: current.lastRequest,
         },
       };
       return;
@@ -696,6 +703,7 @@ export class ProductProjection {
             ? null
             : { ...seededContextWindow, maxTokens: seededContextWindow.maxTokens },
         cumulative,
+        lastRequest: current.lastRequest,
       },
     };
   }
@@ -2366,7 +2374,7 @@ export class ProductProjection {
         // 保持当前状态，等首个有效 text/reasoning/tool 进展再清理，避免标签闪退。
         return positiveInteger(payload.attempt, 1) <= 1 ? this.setApiRetry(null) : [];
       case "model_request_completed":
-        return this.setApiRetry(null);
+        return [...this.setApiRetry(null), ...this.updateLastRequestRate(event, payload)];
       case "model_request_failed":
         return payload.retryable ? [] : this.setApiRetry(null);
       case "model_stream_stalled":
@@ -2379,6 +2387,43 @@ export class ProductProjection {
       case "model_request_admitted":
         return [];
     }
+  }
+
+  /**
+   * 最近一次主会话模型请求的输出速率（token/s）写入 usage.lastRequest，
+   * 供右上角 Agent 状态面板常驻显示。与旧 reducer 同一裁决：只有主会话往返
+   * 才覆盖 usage；子代理/压缩/标题等侧车请求混进来会让读数失真。
+   * 速率只算模型输出生成段（首输出到请求结束），输入/缓存是一次性到达，
+   * 混入会让读数被输入侧支配。
+   */
+  private updateLastRequestRate(
+    event: SessionEvent,
+    payload: Extract<ModelNetworkStatusPayload, { type: "model_request_completed" }>,
+  ): ConversationDelta[] {
+    if (!this.acceptsActiveModelEvent(event)) return [];
+    if (payload.querySource !== "main_turn") return [];
+    const usage = payload.usage;
+    if (!usage) return [];
+    const outputTokens = finiteNonNegative(usage.outputTokens);
+    const duration = finiteNonNegative(payload.durationMs);
+    const first = finiteNonNegative(payload.timeToFirstContentMs);
+    // 首输出可能缺失（如纯工具调用轮）；此时生成段无定义，保持上一次速率不变。
+    const generationDurationMs =
+      duration !== undefined && first !== undefined && duration > first ? duration - first : null;
+    return [
+      {
+        op: "state.updated",
+        patch: {
+          usage: {
+            ...this.snapshot.usage,
+            lastRequest: {
+              outputTokensPerSecond: calculateOutputTps(outputTokens, generationDurationMs),
+              completedAt: this.ms(event),
+            },
+          },
+        },
+      },
+    ];
   }
 
   private onStreamRecoveryStarted(event: SessionEvent): ConversationDelta[] {
@@ -4550,6 +4595,8 @@ export class ProductProjection {
             cacheReadTokens: cumulative.cacheReadTokens + (usage.cacheReadTokens ?? 0),
             cacheWriteTokens: cumulative.cacheWriteTokens + (usage.cacheWriteTokens ?? 0),
           },
+          // 速率由 model_request_completed 单独写入，整体替换不得覆盖它。
+          lastRequest: this.snapshot.usage.lastRequest,
         },
       },
     });

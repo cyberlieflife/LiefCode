@@ -4650,6 +4650,7 @@ export function SessionPane({
             goal={selectionSideChat ? null : (snapshot?.goal ?? null)}
             sessionPlans={state.sessionPlans}
             plan={snapshot?.plan ?? null}
+            usage={snapshot?.usage ?? null}
             backgroundWorks={snapshot?.backgroundWorks ?? []}
             runningSubagents={subagents.running}
             workflowRuns={snapshot?.workflowRuns?.runs ?? []}

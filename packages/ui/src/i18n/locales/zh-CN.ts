@@ -4507,6 +4507,13 @@ const zhCN: Record<string, string> = {
   "chat.statusPanel.todoWaitingFold": "待处理 {count} 项",
   "chat.statusPanel.terminals": "终端",
   "chat.statusPanel.agents": "智能体",
+  "chat.statusPanel.agentStatus": "Agent 状态",
+  "chat.statusPanel.agentStatus.input": "总输入",
+  "chat.statusPanel.agentStatus.output": "总输出",
+  "chat.statusPanel.agentStatus.cacheRead": "缓存读",
+  "chat.statusPanel.agentStatus.tps": "输出速率",
+  "chat.statusPanel.agentStatus.hitRate": "缓存覆盖率",
+  "chat.statusPanel.agentStatus.na": "—",
   // Workflows 分区：与 Terminals / Agents 并列的
   // 第三类实时活动。行内的状态词与步数复用 chat.toolCall.workflow.* 那一组，不另造词汇。
   "chat.statusPanel.workflows": "工作流",

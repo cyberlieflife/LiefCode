@@ -51,6 +51,7 @@ import type {
   BackgroundWorkSummary,
   GoalState,
   PlanState,
+  SessionUsageState,
   ToolCallRow,
   WorkflowRunState,
 } from "@zcode/shared/zcode-protocol-v4";
@@ -112,6 +113,8 @@ interface ConversationStatusPanelProps {
   goal?: GoalState | null;
   sessionPlans?: readonly ToolCallRow[];
   plan?: PlanState | null;
+  /** 本会话 v4 投影的 token 用量累计与最近一次请求速率；Agent 状态分区数据源。 */
+  usage?: SessionUsageState | null;
   backgroundWorks?: readonly BackgroundWorkSummary[];
   runningSubagents?: readonly ZCodeSessionRunningSubagent[];
   /** 本会话 `snapshot.workflowRuns.runs`；与 backgroundWorks 在模型层按 workId ≡ runId 联接。 */
@@ -232,7 +235,8 @@ type StatusSectionKind =
   | "plan"
   | "terminal"
   | "workflow"
-  | "agent";
+  | "agent"
+  | "agentStatus";
 
 const STATUS_SECTION_SCROLL_POLICY = {
   environment: null,
@@ -244,6 +248,8 @@ const STATUS_SECTION_SCROLL_POLICY = {
   // workflow 行与 terminal / agent 行同高（两行 + 控制），限高沿用同一档。
   workflow: "max-h-48",
   agent: "max-h-48",
+  // token 指标是两行网格，固定高度无需滚动。
+  agentStatus: null,
 } as const satisfies Record<StatusSectionKind, string | null>;
 
 function StatusSectionHeader({
@@ -1531,7 +1537,95 @@ function EndedSubagentDirectoryRow({
   );
 }
 
-function StatusSummaryMetric({ children, icon }: { children: ReactNode; icon: ReactNode }) {
+function formatAgentStatusCount(locale: string, value: number): string {
+  return new Intl.NumberFormat(locale).format(value);
+}
+
+function formatAgentStatusTps(locale: string, value: number | null | undefined): string | null {
+  if (value === null || value === undefined || !Number.isFinite(value) || value < 0) {
+    return null;
+  }
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
+}
+
+/** 缓存覆盖率：累计缓存读 ÷ 累计输入；无输入时无定义。 */
+function agentCacheHitRate(usage: SessionUsageState): number | null {
+  const { inputTokens, cacheReadTokens } = usage.cumulative;
+  if (inputTokens <= 0 || cacheReadTokens < 0) return null;
+  return Math.min(1, cacheReadTokens / inputTokens);
+}
+
+function AgentStatusSection({
+  separated,
+  usage,
+}: {
+  separated: boolean;
+  usage: SessionUsageState | null;
+}) {
+  const { intl, locale } = useZCodeIntl();
+  const hitRate = usage ? agentCacheHitRate(usage) : null;
+  const outputTps = usage?.lastRequest?.outputTokensPerSecond ?? null;
+  const tpsText = formatAgentStatusTps(locale, outputTps);
+  return (
+    <StatusSection
+      section="agentStatus"
+      defaultOpen
+      separated={separated}
+      title={intl.formatMessage({ id: "chat.statusPanel.agentStatus" })}
+    >
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 px-2 pb-2 text-ui-xs">
+        <span className="text-[var(--color-foreground-subtle)]">
+          {intl.formatMessage({ id: "chat.statusPanel.agentStatus.input" })}
+        </span>
+        <span className="text-right font-mono text-ui-sm text-[var(--color-foreground)]">
+          {usage ? formatAgentStatusCount(locale, usage.cumulative.inputTokens) : "-"}
+        </span>
+        <span className="text-[var(--color-foreground-subtle)]">
+          {intl.formatMessage({ id: "chat.statusPanel.agentStatus.output" })}
+        </span>
+        <span className="text-right font-mono text-ui-sm text-[var(--color-foreground)]">
+          {usage ? formatAgentStatusCount(locale, usage.cumulative.outputTokens) : "-"}
+        </span>
+        <span className="text-[var(--color-foreground-subtle)]">
+          {intl.formatMessage({ id: "chat.statusPanel.agentStatus.cacheRead" })}
+        </span>
+        <span className="text-right font-mono text-ui-sm text-[var(--color-foreground)]">
+          {usage ? formatAgentStatusCount(locale, usage.cumulative.cacheReadTokens) : "-"}
+        </span>
+        <span className="text-[var(--color-foreground-subtle)]">
+          {intl.formatMessage({ id: "chat.statusPanel.agentStatus.tps" })}
+        </span>
+        <span className="text-right font-mono text-ui-sm text-[var(--color-foreground)]">
+          {tpsText
+            ? `${tpsText} t/s`
+            : intl.formatMessage({ id: "chat.statusPanel.agentStatus.na" })}
+        </span>
+        <span className="text-[var(--color-foreground-subtle)]">
+          {intl.formatMessage({ id: "chat.statusPanel.agentStatus.hitRate" })}
+        </span>
+        <span className="text-right font-mono text-ui-sm text-[var(--color-foreground)]">
+          {hitRate === null
+            ? intl.formatMessage({ id: "chat.statusPanel.agentStatus.na" })
+            : new Intl.NumberFormat(locale, {
+                maximumFractionDigits: 1,
+                style: "percent",
+              }).format(hitRate)}
+        </span>
+      </div>
+    </StatusSection>
+  );
+}
+
+function StatusSummaryMetric({
+  children,
+  icon,
+  trailing,
+}: {
+  children: ReactNode;
+  icon: ReactNode;
+  /** 主状态之外的常驻指标；跟在主内容之后，自身不参与截断。 */
+  trailing?: ReactNode;
+}) {
   return (
     <div className="flex h-8 w-max max-w-80 min-w-0 items-center gap-1.5 pl-2 pr-3 text-ui-base text-[var(--color-foreground)]">
       <span className="relative size-4 shrink-0">
@@ -1541,6 +1635,7 @@ function StatusSummaryMetric({ children, icon }: { children: ReactNode; icon: Re
         <Maximize2Icon className="absolute inset-0 size-4 text-[var(--color-foreground)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
       </span>
       {children}
+      {trailing}
     </div>
   );
 }
@@ -1562,14 +1657,17 @@ function StatusSummaryRow({
   gitWorktreeChangeSummary,
   model,
   onVariantChange,
+  usage,
 }: {
   /** 已结束 run 的目录计数；宿主给 0 表示目录入口不可渲染（缺会话或缺回调）。 */
   endedWorkflowRunCount: number;
   gitWorktreeChangeSummary?: { added: number; removed: number } | null;
   model: ConversationStatusPanelModel;
   onVariantChange?: (variant: ChatViewSummaryPanelVariant | null) => void;
+  /** Agent 状态分区数据；无 token 用量时胶囊不显示 token 摘要。 */
+  usage?: SessionUsageState | null;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl, locale } = useZCodeIntl();
   const expandLabel = intl.formatMessage({ id: "chat.summaryPanel.showPanel" });
   const currentPlanItem = getCurrentPlanItem(model.plan);
   const completedPlanItem = getCompletedPlanItem(model.plan);
@@ -1610,18 +1708,39 @@ function StatusSummaryRow({
         : hasRunningBash
           ? SquareTerminalIcon
           : BotIcon;
+  // Token 速率与主状态并存，走 trailing 附在摘要右侧。兜底链同一时刻只出一个主状态，
+  // 速率排进链里就会被 Git/Goal/Todo 顶掉，收起态于是长期看不到这个读数。
+  const outputTpsText = formatAgentStatusTps(
+    locale,
+    usage?.lastRequest?.outputTokensPerSecond ?? null,
+  );
+  const summaryTrailing = outputTpsText ? (
+    <>
+      <span aria-hidden="true" className="h-3.5 w-px shrink-0 bg-[var(--color-border)]" />
+      <span className="shrink-0 font-mono text-ui-sm text-[var(--color-foreground-subtle)]">
+        {outputTpsText} t/s
+      </span>
+    </>
+  ) : null;
   const summaryMetric = currentPlanItem ? (
     <StatusSummaryMetric
       icon={<ArrowRightIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
     >
       <span className="min-w-0 truncate">{currentPlanItem.content}</span>
     </StatusSummaryMetric>
   ) : goalTitle && isActiveGoal ? (
-    <StatusSummaryMetric icon={<GoalIcon className="size-4 text-[var(--color-foreground)]" />}>
+    <StatusSummaryMetric
+      icon={<GoalIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
+    >
       <span className="min-w-0 truncate">{goalTitle}</span>
     </StatusSummaryMetric>
   ) : hasGitMiniSummary ? (
-    <StatusSummaryMetric icon={<FileDiffIcon className="size-4 text-[var(--color-foreground)]" />}>
+    <StatusSummaryMetric
+      icon={<FileDiffIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
+    >
       <span className="min-w-0 truncate">
         {intl.formatMessage({ id: "chat.statusPanel.changes" })}
       </span>
@@ -1629,16 +1748,23 @@ function StatusSummaryRow({
       <span className="shrink-0 text-[var(--color-diff-removed)]">-{removed}</span>
     </StatusSummaryMetric>
   ) : goalTitle && isDoneGoal ? (
-    <StatusSummaryMetric icon={<GoalIcon className="size-4 text-[var(--color-foreground)]" />}>
+    <StatusSummaryMetric
+      icon={<GoalIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
+    >
       <span className="min-w-0 truncate">{goalTitle}</span>
     </StatusSummaryMetric>
   ) : completedPlanItem ? (
-    <StatusSummaryMetric icon={<CheckCircle2Icon className="size-4 text-[var(--color-success)]" />}>
+    <StatusSummaryMetric
+      icon={<CheckCircle2Icon className="size-4 text-[var(--color-success)]" />}
+      trailing={summaryTrailing}
+    >
       <span className="min-w-0 truncate">{completedPlanItem.content}</span>
     </StatusSummaryMetric>
   ) : model.plan ? (
     <StatusSummaryMetric
       icon={<ListChecksIcon className="size-4 text-[var(--color-foreground-subtle)]" />}
+      trailing={summaryTrailing}
     >
       <span className="min-w-0 truncate">
         {intl.formatMessage({ id: "chat.statusPanel.todo" })}
@@ -1650,6 +1776,7 @@ function StatusSummaryRow({
   ) : latestSessionPlan ? (
     <StatusSummaryMetric
       icon={<ListChecksIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
     >
       <span className="min-w-0 truncate">
         {latestSessionPlan.title ?? intl.formatMessage({ id: "chat.statusPanel.planFallback" })}
@@ -1658,6 +1785,7 @@ function StatusSummaryRow({
   ) : runningCount > 0 ? (
     <StatusSummaryMetric
       icon={<RunningSummaryIcon className="size-4 text-[var(--color-foreground)]" />}
+      trailing={summaryTrailing}
     >
       {/* 产品规则：实时活动只能在没有 Goal/Todo/Git 等主状态时兜底，
           避免胶囊把主状态和输入框已展示的实时计数重复拼接。 */}
@@ -1675,12 +1803,33 @@ function StatusSummaryRow({
     // 分支：图标沿用 Workflow 域，文案与 Workflows 分区页脚同 key，点开即展开面板。
     <StatusSummaryMetric
       icon={<Workflow className="size-4 text-[var(--color-foreground-subtle)]" />}
+      trailing={summaryTrailing}
     >
       <span className="min-w-0 truncate">
         {intl.formatMessage({ id: "chat.statusPanel.endedWorkflows" })}
       </span>
       <span className="shrink-0 text-[var(--color-foreground-subtle)]">
         {endedWorkflowRunCount}
+      </span>
+    </StatusSummaryMetric>
+  ) : usage &&
+    (usage.lastRequest != null ||
+      usage.cumulative.inputTokens > 0 ||
+      usage.cumulative.outputTokens > 0 ||
+      usage.cumulative.cacheReadTokens > 0) ? (
+    // 兜底链的最低优先级：没有 Git/Goal/Todo/活动/已结束 run 时，Agent 状态
+    // 分区是面板唯一内容；胶囊至少要给一个可点击的入口，否则只剩空壳。
+    // 本分支自身已展示速率或输出量，不再挂 trailing，避免同一个数出现两次。
+    <StatusSummaryMetric
+      icon={<ActivityIcon className="size-4 text-[var(--color-foreground-subtle)]" />}
+    >
+      <span className="min-w-0 truncate">
+        {intl.formatMessage({ id: "chat.statusPanel.agentStatus" })}
+      </span>
+      <span className="shrink-0 text-[var(--color-foreground-subtle)]">
+        {outputTpsText
+          ? `${outputTpsText} t/s`
+          : formatAgentStatusCount(locale, usage.cumulative.outputTokens)}
       </span>
     </StatusSummaryMetric>
   ) : null;
@@ -1714,6 +1863,7 @@ function ConversationStatusPanelImpl({
   goal,
   sessionPlans,
   plan,
+  usage,
   backgroundWorks = EMPTY_BACKGROUND_WORKS,
   runningSubagents = EMPTY_RUNNING_SUBAGENTS,
   workflowRuns = EMPTY_WORKFLOW_RUNS,
@@ -1794,6 +1944,16 @@ function ConversationStatusPanelImpl({
     [miniWidth],
   );
   const canRenderGit = Boolean(model.git && gitSummary && onRefreshGit);
+  // Agent 状态分区常驻：只要本会话有过任何 token 用量或请求记录即显示，
+  // 与 Git/Goal 等活跃内容无关；0 值会话（新对话）不占面板。
+  const canRenderAgentStatus = Boolean(
+    usage &&
+    (usage.lastRequest != null ||
+      usage.cumulative.inputTokens > 0 ||
+      usage.cumulative.outputTokens > 0 ||
+      usage.cumulative.cacheReadTokens > 0 ||
+      usage.cumulative.cacheWriteTokens > 0),
+  );
   const canRenderGoal = Boolean(model.goal);
   const canRenderSessionPlans = Boolean(model.sessionPlans);
   const canRenderPlan = Boolean(model.plan);
@@ -1853,9 +2013,10 @@ function ConversationStatusPanelImpl({
 
   // `model.hasContent` 只认**活的**内容（模型手上的投影都是活状态），所以「只剩历史」的
   // 会话会连整个胶囊一起消失——而那正是重启后打开一条旧对话的样子，run 目录的入口于是又没了。
-  // 已结束的 run 因此单独开这道门。（Agents 的已结束行有同一个洞：`endedSubagentCount` 也
+  // 已结束的 run 因此单独开这道门；Agent 状态分区同理：旧对话的 token 用量仍然值得展示，
+  // 只有用量数据时也保留面板。（Agents 的已结束行有同一个洞：`endedSubagentCount` 也
   // 没进 `hasContent`。那是既有行为，不在本轮一起翻。）
-  if (!model.hasContent && !canRenderEndedWorkflows) {
+  if (!model.hasContent && !canRenderEndedWorkflows && !canRenderAgentStatus) {
     return null;
   }
 
@@ -1963,6 +2124,9 @@ function ConversationStatusPanelImpl({
               variant === "auto" ? "hidden @min-[1280px]/conversation:flex" : "flex",
             )}
           >
+            {canRenderAgentStatus ? (
+              <AgentStatusSection usage={usage ?? null} separated={false} />
+            ) : null}
             {canRenderGit ? (
               <GitStatusSection
                 model={model}
@@ -1973,14 +2137,14 @@ function ConversationStatusPanelImpl({
                 activeTaskChangeSummary={activeTaskChangeSummary}
                 onRefreshGit={onRefreshGit}
                 onOpenGitReview={onOpenGitReview}
-                separated={false}
+                separated={canRenderAgentStatus}
                 useVerticalFloatingPanels={useVerticalFloatingPanels}
               />
             ) : null}
             {canRenderGoal ? (
               <GoalStatusSection
                 model={model}
-                separated={canRenderGit}
+                separated={canRenderAgentStatus || canRenderGit}
                 onPauseGoal={onPauseGoal}
                 onResumeGoal={onResumeGoal}
               />
@@ -1990,14 +2154,16 @@ function ConversationStatusPanelImpl({
                 model={model}
                 parentSessionId={parentSessionId}
                 onOpenPlanDetail={onOpenPlanDetail}
-                separated={canRenderGit || canRenderGoal}
+                separated={canRenderAgentStatus || canRenderGit || canRenderGoal}
               />
             ) : null}
             {canRenderPlan ? (
               <PlanStatusSection
                 model={model}
                 popoverSide={useVerticalFloatingPanels ? "bottom" : "left"}
-                separated={canRenderGit || canRenderGoal || canRenderSessionPlans}
+                separated={
+                  canRenderAgentStatus || canRenderGit || canRenderGoal || canRenderSessionPlans
+                }
               />
             ) : null}
             {canRenderTerminals ? (
@@ -2008,7 +2174,13 @@ function ConversationStatusPanelImpl({
                 works={model.runningBashWorks}
                 open={terminalSectionOpen}
                 onOpenChange={onTerminalSectionOpenChange}
-                separated={canRenderGit || canRenderGoal || canRenderSessionPlans || canRenderPlan}
+                separated={
+                  canRenderAgentStatus ||
+                  canRenderGit ||
+                  canRenderGoal ||
+                  canRenderSessionPlans ||
+                  canRenderPlan
+                }
                 onCancelBackgroundWork={onCancelBackgroundWork}
               />
             ) : null}
@@ -2020,6 +2192,7 @@ function ConversationStatusPanelImpl({
                 open={workflowSectionOpen}
                 onOpenChange={onWorkflowSectionOpenChange}
                 separated={
+                  canRenderAgentStatus ||
                   canRenderGit ||
                   canRenderGoal ||
                   canRenderSessionPlans ||
@@ -2041,6 +2214,7 @@ function ConversationStatusPanelImpl({
                 open={agentSectionOpen}
                 onOpenChange={onAgentSectionOpenChange}
                 separated={
+                  canRenderAgentStatus ||
                   canRenderGit ||
                   canRenderGoal ||
                   canRenderSessionPlans ||
@@ -2075,6 +2249,7 @@ function ConversationStatusPanelImpl({
             endedWorkflowRunCount={canRenderEndedWorkflows ? endedWorkflowRunCount : 0}
             gitWorktreeChangeSummary={gitWorktreeChangeSummary}
             onVariantChange={onVariantChange}
+            usage={usage}
           />
         </div>
       </aside>
