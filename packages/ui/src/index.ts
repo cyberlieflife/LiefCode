@@ -99,6 +99,11 @@ export {
   loadUiFontFamily,
   subscribeToUiFontFamilyStorageChanges,
 } from "./lib/uiFontFamily.js";
+export {
+  applyUiCardStyle,
+  loadUiCardStyle,
+  subscribeToUiCardStyleStorageChanges,
+} from "./lib/uiCardStyle.js";
 export { reportUiLaunchToInput } from "./lib/uiPerfArmsTelemetry.js";
 export {
   RendererUserActionTelemetry,

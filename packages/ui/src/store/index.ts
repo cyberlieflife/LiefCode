@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- Store 只做切片组合与广播接线，切片已拆到 uiFontFamilyState/uiCardStyleState 等子模块，入口保持收口。 */
 /**
  * Zustand Store —— 全局状态管理
  *
@@ -36,6 +37,12 @@ import {
   type UiFontFamilySlice,
 } from "@/store/uiFontFamilyState.js";
 import {
+  applyUiCardStyleBroadcast,
+  createUiCardStyleStoreSlice,
+  type UiCardStyleSlice,
+} from "@/store/uiCardStyleState.js";
+import {
+  isUiCardStyleBroadcastField,
   isUiFontFamilyBroadcastField,
   STATE_BROADCAST_FIELDS,
   type StateBroadcastField,
@@ -109,7 +116,7 @@ function loadPerformanceMode(): boolean {
 // State 定义
 // ============================================================================
 
-export interface ZCodeState extends UiFontFamilySlice {
+export interface ZCodeState extends UiFontFamilySlice, UiCardStyleSlice {
   /** 展示详情偏好，不改变 Agent 权限或执行能力。 */
   interfaceMode: InterfaceMode;
   setInterfaceMode: (mode: InterfaceMode) => void;
@@ -304,6 +311,7 @@ export function createZCodeStore(
     },
 
     ...createUiFontFamilyStoreSlice({ readState: () => get(), writeState: (patch) => set(patch) }),
+    ...createUiCardStyleStoreSlice({ readState: () => get(), writeState: (patch) => set(patch) }),
 
     performanceMode: loadPerformanceMode(),
     setPerformanceMode: (enabled: boolean) => {
@@ -496,6 +504,8 @@ export function createZCodeStore(
         state.setUiFontSizePx(msg.payload);
       } else if (isUiFontFamilyBroadcastField(field)) {
         applyUiFontFamilyBroadcast(state, field, msg.payload);
+      } else if (isUiCardStyleBroadcastField(field)) {
+        applyUiCardStyleBroadcast(state, field, msg.payload);
       }
     } finally {
       applyingBroadcast = false;

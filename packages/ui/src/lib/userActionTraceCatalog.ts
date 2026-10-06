@@ -60,6 +60,7 @@ export const SETTINGS_USER_ACTION_FEATURES = {
     "change_ui_font_size",
     "change_ui_font_latin",
     "change_ui_font_cjk",
+    "change_ui_card_style",
     "change_code_light_theme",
     "change_code_dark_theme",
     "toggle_code_line_numbers",

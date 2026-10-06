@@ -1171,6 +1171,343 @@ body {
 }
 
 /*
+ * === 卡片样式层 ===
+ * 独立于配色主题的表面质感选择：五个区域（侧边栏/大卡片/小卡片/面板/背景）在
+ * <html> 上各挂一个 data-card-style-<surface> 属性，这里按属性覆盖表面颜色与效果。
+ * 半透明底色一律用 color-mix 从现有 token 派生，明暗与四套配色自动适配；
+ * 设置页预览元素带 data-ucs-preview + 同名 data 属性，与真实表面共用同一组规则。
+ * default 不写规则，即现状；样式只改表面质感，不改信息密度、间距与组件布局。
+ * 注意：侧边栏样式挂在外层宽度容器 div#sidebar 上（内层 aside 无 id），
+ * 且该容器下层只有窗口纯色底，玻璃类样式需要自带底衬渐变提供可透色彩。
+ */
+:root {
+  /* 亚克力的噪点纹理：低透明度 feTurbulence，叠在半透明表面上提供细颗粒。 */
+  --ucs-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='128' height='128' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* --- 极简扁平：实色表面，用更清晰的边框分层，无模糊无投影 --- */
+html[data-card-style-sidebar="flat"] #sidebar,
+[data-ucs-preview="sidebar"][data-card-style-sidebar="flat"] {
+  background-color: var(--color-background-win-alt);
+}
+
+html[data-card-style-card-large="flat"] [data-slot="card"]:not([data-size="sm"]),
+[data-ucs-preview="cardLarge"][data-card-style-card-large="flat"] {
+  background-color: var(--color-card);
+  box-shadow: none;
+  border-color: color-mix(in oklab, var(--color-foreground) 18%, transparent);
+}
+
+html[data-card-style-card-small="flat"] [data-slot="card"][data-size="sm"],
+[data-ucs-preview="cardSmall"][data-card-style-card-small="flat"] {
+  background-color: var(--color-card);
+  box-shadow: none;
+  border-color: color-mix(in oklab, var(--color-foreground) 18%, transparent);
+}
+
+html[data-card-style-panel="flat"] .bg-panel,
+[data-ucs-preview="panel"][data-card-style-panel="flat"] {
+  background-color: var(--color-panel);
+  box-shadow: none;
+  border-color: color-mix(in oklab, var(--color-foreground) 14%, transparent);
+}
+
+/* --- 亚克力：Fluent 风格低透明度 + 柔化模糊 + 噪点颗粒 --- */
+html[data-card-style-sidebar="acrylic"] #sidebar,
+[data-ucs-preview="sidebar"][data-card-style-sidebar="acrylic"] {
+  background-color: color-mix(in oklab, var(--color-card) 50%, transparent);
+  /* 侧栏下层只有窗口纯色底，暗色下与卡片 token 同色系，靠淡品牌渐变提供可辨的色差。 */
+  background-image:
+    radial-gradient(
+      140% 90% at 0% 0%,
+      color-mix(in oklab, var(--color-brand) 8%, transparent),
+      transparent 62%
+    ),
+    var(--ucs-noise);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+html[data-card-style-card-large="acrylic"] [data-slot="card"]:not([data-size="sm"]),
+[data-ucs-preview="cardLarge"][data-card-style-card-large="acrylic"] {
+  background-color: color-mix(in oklab, var(--color-card) 58%, transparent);
+  background-image: var(--ucs-noise);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+html[data-card-style-card-small="acrylic"] [data-slot="card"][data-size="sm"],
+[data-ucs-preview="cardSmall"][data-card-style-card-small="acrylic"] {
+  background-color: color-mix(in oklab, var(--color-card) 62%, transparent);
+  background-image: var(--ucs-noise);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+html[data-card-style-panel="acrylic"] .bg-panel,
+[data-ucs-preview="panel"][data-card-style-panel="acrylic"] {
+  background-color: color-mix(in oklab, var(--color-panel) 55%, transparent);
+  background-image: var(--ucs-noise);
+  backdrop-filter: blur(24px) saturate(120%);
+}
+
+/* --- 毛玻璃：半透明 + 背景模糊提亮 + 淡淡的内高光描边 --- */
+html[data-card-style-sidebar="glass"] #sidebar,
+[data-ucs-preview="sidebar"][data-card-style-sidebar="glass"] {
+  background-color: color-mix(in oklab, var(--color-card) 55%, transparent);
+  /* 底衬渐变让玻璃在纯色窗口底上也有可透的色彩层次。 */
+  background-image: radial-gradient(
+    140% 90% at 0% 0%,
+    color-mix(in oklab, var(--color-brand) 12%, transparent),
+    transparent 62%
+  );
+  backdrop-filter: blur(16px) saturate(140%);
+  /* 高光用白色而不是卡片 token：暗色下卡片 token 与底色同系，内描边会不可见。 */
+  box-shadow: inset 1px 0 0 0 color-mix(in oklab, var(--color-white) 16%, transparent);
+}
+
+html[data-card-style-card-large="glass"] [data-slot="card"]:not([data-size="sm"]),
+[data-ucs-preview="cardLarge"][data-card-style-card-large="glass"] {
+  background-color: color-mix(in oklab, var(--color-card) 60%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-color: color-mix(in oklab, var(--color-card) 80%, transparent);
+  box-shadow: inset 0 1px 0 0 color-mix(in oklab, var(--color-card) 70%, transparent);
+}
+
+html[data-card-style-card-small="glass"] [data-slot="card"][data-size="sm"],
+[data-ucs-preview="cardSmall"][data-card-style-card-small="glass"] {
+  background-color: color-mix(in oklab, var(--color-card) 60%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  border-color: color-mix(in oklab, var(--color-card) 80%, transparent);
+}
+
+html[data-card-style-panel="glass"] .bg-panel,
+[data-ucs-preview="panel"][data-card-style-panel="glass"] {
+  background-color: color-mix(in oklab, var(--color-panel) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* --- 液态玻璃：更透 + 更强模糊提亮，顶部内高光构成液态弧面感 --- */
+html[data-card-style-sidebar="liquid"] #sidebar,
+[data-ucs-preview="sidebar"][data-card-style-sidebar="liquid"] {
+  background-color: color-mix(in oklab, var(--color-card) 42%, transparent);
+  background-image:
+    radial-gradient(
+      130% 80% at 0% 0%,
+      color-mix(in oklab, var(--color-brand) 18%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      100% 70% at 0% 100%,
+      color-mix(in oklab, var(--color-violet-500) 12%, transparent),
+      transparent 65%
+    );
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 1px 0 0 0 color-mix(in oklab, var(--color-white) 22%, transparent);
+}
+
+html[data-card-style-card-large="liquid"] [data-slot="card"]:not([data-size="sm"]),
+[data-ucs-preview="cardLarge"][data-card-style-card-large="liquid"] {
+  background-color: color-mix(in oklab, var(--color-card) 45%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-color: color-mix(in oklab, var(--color-white) 30%, transparent);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklab, var(--color-white) 28%, transparent),
+    0 8px 32px -8px rgb(0 0 0 / 0.25);
+}
+
+html[data-card-style-card-small="liquid"] [data-slot="card"][data-size="sm"],
+[data-ucs-preview="cardSmall"][data-card-style-card-small="liquid"] {
+  background-color: color-mix(in oklab, var(--color-card) 45%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-color: color-mix(in oklab, var(--color-white) 30%, transparent);
+  box-shadow: inset 0 1px 0 0 color-mix(in oklab, var(--color-white) 28%, transparent);
+}
+
+html[data-card-style-panel="liquid"] .bg-panel,
+[data-ucs-preview="panel"][data-card-style-panel="liquid"] {
+  background-color: color-mix(in oklab, var(--color-panel) 40%, transparent);
+  backdrop-filter: blur(28px) saturate(180%);
+  border-color: color-mix(in oklab, var(--color-white) 24%, transparent);
+}
+
+/* --- 霓虹发光：半透明深底 + brand 色发光描边；浅色下发光自然收敛，暗色最明显 --- */
+html[data-card-style-sidebar="neon"] #sidebar,
+[data-ucs-preview="sidebar"][data-card-style-sidebar="neon"] {
+  background-color: color-mix(in oklab, var(--color-card) 55%, transparent);
+  background-image: radial-gradient(
+    140% 90% at 0% 0%,
+    color-mix(in oklab, var(--color-brand) 20%, transparent),
+    transparent 60%
+  );
+  backdrop-filter: blur(12px) saturate(150%);
+  box-shadow:
+    inset 1px 0 0 0 color-mix(in oklab, var(--color-brand) 45%, transparent),
+    0 0 20px -6px color-mix(in oklab, var(--color-brand) 40%, transparent);
+}
+
+html[data-card-style-card-large="neon"] [data-slot="card"]:not([data-size="sm"]),
+[data-ucs-preview="cardLarge"][data-card-style-card-large="neon"] {
+  background-color: color-mix(in oklab, var(--color-card) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(150%);
+  border-color: color-mix(in oklab, var(--color-brand) 40%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--color-brand) 20%, transparent),
+    0 0 24px -6px color-mix(in oklab, var(--color-brand) 45%, transparent);
+}
+
+html[data-card-style-card-small="neon"] [data-slot="card"][data-size="sm"],
+[data-ucs-preview="cardSmall"][data-card-style-card-small="neon"] {
+  background-color: color-mix(in oklab, var(--color-card) 55%, transparent);
+  backdrop-filter: blur(12px) saturate(150%);
+  border-color: color-mix(in oklab, var(--color-brand) 40%, transparent);
+  box-shadow: 0 0 16px -6px color-mix(in oklab, var(--color-brand) 45%, transparent);
+}
+
+html[data-card-style-panel="neon"] .bg-panel,
+[data-ucs-preview="panel"][data-card-style-panel="neon"] {
+  background-color: color-mix(in oklab, var(--color-panel) 50%, transparent);
+  backdrop-filter: blur(12px) saturate(150%);
+  border-color: color-mix(in oklab, var(--color-brand) 30%, transparent);
+}
+
+/*
+ * 背景：让窗口与页面底层变半透明并叠加氛围渐变，玻璃类表面才有内容可透。
+ * 半透明值按明暗各写一组基底（亮色 neutral-50/100/200，暗色 neutral-900/800）。
+ */
+html[data-card-style-background="acrylic"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-50) 68%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-100) 62%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-200) 70%, transparent);
+}
+
+.dark[data-card-style-background="acrylic"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-900) 68%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-800) 55%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-800) 70%, transparent);
+}
+
+html[data-card-style-background="glass"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-50) 52%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-100) 48%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-200) 55%, transparent);
+}
+
+.dark[data-card-style-background="glass"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-900) 52%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-800) 42%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-800) 55%, transparent);
+}
+
+html[data-card-style-background="liquid"],
+html[data-card-style-background="neon"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-50) 38%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-100) 32%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-200) 40%, transparent);
+}
+
+.dark[data-card-style-background="liquid"],
+.dark[data-card-style-background="neon"] {
+  --color-background: color-mix(in oklab, var(--color-neutral-900) 38%, transparent);
+  --color-background-alt: color-mix(in oklab, var(--color-neutral-800) 28%, transparent);
+  --color-background-win-alt: color-mix(in oklab, var(--color-neutral-800) 40%, transparent);
+}
+
+/* 液态/霓虹背景在窗口底层铺氛围光斑，让上层半透明表面真正"透"出色彩。 */
+html[data-card-style-background="liquid"] [data-desktop-window-frame],
+[data-ucs-preview="background"][data-card-style-background="liquid"] {
+  position: relative;
+  background-image:
+    radial-gradient(
+      90% 70% at 15% 0%,
+      color-mix(in oklab, var(--color-brand) 16%, transparent),
+      transparent 65%
+    ),
+    radial-gradient(
+      70% 60% at 90% 100%,
+      color-mix(in oklab, var(--color-violet-500) 12%, transparent),
+      transparent 70%
+    );
+}
+
+html[data-card-style-background="neon"] [data-desktop-window-frame],
+[data-ucs-preview="background"][data-card-style-background="neon"] {
+  position: relative;
+  background-image:
+    radial-gradient(
+      55% 45% at 12% 8%,
+      color-mix(in oklab, var(--color-sky-500) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      45% 40% at 88% 92%,
+      color-mix(in oklab, var(--color-violet-500) 18%, transparent),
+      transparent 72%
+    );
+}
+
+/* 预览外壳没有窗口框架，光斑直接画在自身；内容容器需要保持在其上。 */
+[data-ucs-preview="background"][data-card-style-background="liquid"],
+[data-ucs-preview="background"][data-card-style-background="neon"] {
+  overflow: hidden;
+}
+
+/* 大面积 backdrop-filter 有合成开销：系统声明减少透明度时回落实色。 */
+@media (prefers-reduced-transparency: reduce) {
+  html[data-card-style-sidebar="acrylic"] #sidebar,
+  html[data-card-style-sidebar="glass"] #sidebar,
+  html[data-card-style-sidebar="liquid"] #sidebar,
+  html[data-card-style-sidebar="neon"] #sidebar,
+  [data-ucs-preview="sidebar"][data-card-style-sidebar="acrylic"],
+  [data-ucs-preview="sidebar"][data-card-style-sidebar="glass"],
+  [data-ucs-preview="sidebar"][data-card-style-sidebar="liquid"],
+  [data-ucs-preview="sidebar"][data-card-style-sidebar="neon"] {
+    background-color: var(--color-background-win-alt);
+    background-image: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  html[data-card-style-card-large="acrylic"] [data-slot="card"]:not([data-size="sm"]),
+  html[data-card-style-card-large="glass"] [data-slot="card"]:not([data-size="sm"]),
+  html[data-card-style-card-large="liquid"] [data-slot="card"]:not([data-size="sm"]),
+  html[data-card-style-card-large="neon"] [data-slot="card"]:not([data-size="sm"]),
+  [data-ucs-preview="cardLarge"][data-card-style-card-large="acrylic"],
+  [data-ucs-preview="cardLarge"][data-card-style-card-large="glass"],
+  [data-ucs-preview="cardLarge"][data-card-style-card-large="liquid"],
+  [data-ucs-preview="cardLarge"][data-card-style-card-large="neon"] {
+    background-color: var(--color-card);
+    background-image: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  html[data-card-style-card-small="acrylic"] [data-slot="card"][data-size="sm"],
+  html[data-card-style-card-small="glass"] [data-slot="card"][data-size="sm"],
+  html[data-card-style-card-small="liquid"] [data-slot="card"][data-size="sm"],
+  html[data-card-style-card-small="neon"] [data-slot="card"][data-size="sm"],
+  [data-ucs-preview="cardSmall"][data-card-style-card-small="acrylic"],
+  [data-ucs-preview="cardSmall"][data-card-style-card-small="glass"],
+  [data-ucs-preview="cardSmall"][data-card-style-card-small="liquid"],
+  [data-ucs-preview="cardSmall"][data-card-style-card-small="neon"] {
+    background-color: var(--color-card);
+    background-image: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  html[data-card-style-panel="acrylic"] .bg-panel,
+  html[data-card-style-panel="glass"] .bg-panel,
+  html[data-card-style-panel="liquid"] .bg-panel,
+  html[data-card-style-panel="neon"] .bg-panel,
+  [data-ucs-preview="panel"][data-card-style-panel="acrylic"],
+  [data-ucs-preview="panel"][data-card-style-panel="glass"],
+  [data-ucs-preview="panel"][data-card-style-panel="liquid"],
+  [data-ucs-preview="panel"][data-card-style-panel="neon"] {
+    background-color: var(--color-panel);
+    background-image: none;
+    backdrop-filter: none;
+  }
+}
+
+/*
  * 之前只有 task 列表单独定制了滚动条，其他面板、下拉列表、代码区仍然保留系统默认样式，
  * 同一套界面里会出现粗细、圆角和轨道背景都不一致的问题。这里把这套透明轨道 + 圆角 thumb
  * 提升成全局原生滚动条样式，让 desktop/web、明暗主题下的视觉表现保持统一。

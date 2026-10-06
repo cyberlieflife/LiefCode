@@ -5,11 +5,14 @@ import {
   ResourceManagerApp,
   ZCodeIntlProvider,
   applyTheme,
+  applyUiCardStyle,
   applyUiFontFamily,
   applyUiFontSizePx,
   isTheme,
+  loadUiCardStyle,
   loadUiFontFamily,
   loadUiFontSizePx,
+  subscribeToUiCardStyleStorageChanges,
   subscribeToUiFontFamilyStorageChanges,
   subscribeToUiFontSizeStorageChanges,
 } from "@zcode/ui";
@@ -40,6 +43,9 @@ subscribeToUiFontSizeStorageChanges();
 const resourceManagerFontFamily = loadUiFontFamily();
 applyUiFontFamily(resourceManagerFontFamily.latin, resourceManagerFontFamily.cjk);
 subscribeToUiFontFamilyStorageChanges();
+// 卡片样式偏好同样只读主窗口写入的 localStorage，由 storage 事件持续同步。
+applyUiCardStyle(loadUiCardStyle());
+subscribeToUiCardStyleStorageChanges();
 
 const root = document.getElementById("root");
 if (root) {

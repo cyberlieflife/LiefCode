@@ -24,6 +24,8 @@ import { THEME_MODES } from "@/settings/settingsPageConfig.js";
 import { MAX_UI_FONT_SIZE_PX, MIN_UI_FONT_SIZE_PX } from "@/lib/uiFontSize.js";
 import { UiFontFamilySetting } from "@/settings/UiFontFamilySetting.js";
 import type { UiFontFamilyCjk, UiFontFamilyLatin } from "@/lib/uiFontFamily.js";
+import { UiCardStyleSetting } from "@/settings/UiCardStyleSetting.js";
+import type { UiCardStyle, UiCardStyleConfig, UiCardStyleSurface } from "@/lib/uiCardStyle.js";
 
 function FontSizeInput({
   value,
@@ -91,6 +93,8 @@ export function AppearanceSectionContent({
   setUiFontFamilyLatin,
   uiFontFamilyCjk,
   setUiFontFamilyCjk,
+  uiCardStyle,
+  onChangeUiCardStyle,
 }: {
   codePreviewSettings: CodePreviewSettings;
   setCodePreviewSettings: (settings: Partial<CodePreviewSettings>) => void;
@@ -102,6 +106,8 @@ export function AppearanceSectionContent({
   setUiFontFamilyLatin: (family: UiFontFamilyLatin) => void;
   uiFontFamilyCjk: UiFontFamilyCjk;
   setUiFontFamilyCjk: (family: UiFontFamilyCjk) => void;
+  uiCardStyle: UiCardStyleConfig;
+  onChangeUiCardStyle: (surface: UiCardStyleSurface, style: UiCardStyle) => void;
 }) {
   const { intl } = useZCodeIntl();
   const activePreviewMode = resolveTheme(theme);
@@ -171,6 +177,8 @@ export function AppearanceSectionContent({
           onUiFontFamilyLatinChange={setUiFontFamilyLatin}
           onUiFontFamilyCjkChange={setUiFontFamilyCjk}
         />
+
+        <UiCardStyleSetting config={uiCardStyle} onChange={onChangeUiCardStyle} />
       </div>
 
       <div className="space-y-6">

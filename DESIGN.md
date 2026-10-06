@@ -71,6 +71,32 @@ The Claude style theme:
 
 Style themes must not change information density, spacing rhythm, or component layout. Any style-theme rule that needs per-component geometry changes should instead override a shared token.
 
+## Card Styles
+
+User-facing card style choices live in Settings → Appearance and are independent from the color theme. Five surfaces are styled separately, each with its own selector:
+
+- **Sidebar**: the workspace sidebar shell (`aside#sidebar`).
+- **Large card**: the `Card` component with default size.
+- **Small card**: the `Card` component with `data-size="sm"`.
+- **Panel**: low-elevation containers using the `bg-panel` surface.
+- **Background**: the window shell base (`[data-desktop-window-frame]`) plus the page backdrop behind translucent surfaces.
+
+Six styles are available for every surface:
+
+- **Default**: no override; current token values.
+- **Flat**: opaque surfaces, no blur, clearer border separation instead of shadows.
+- **Acrylic**: low opacity plus `backdrop-filter: blur(24px)` and a noise texture (Fluent style).
+- **Glass**: semi-transparent plus `backdrop-filter: blur(16px) saturate(140%)` and a highlight border.
+- **Liquid glass**: lower opacity plus `blur(28px) saturate(180%)`, a top inner highlight, and a gradient border.
+- **Neon glow**: translucent dark base with a brand-colored glow border and light blur.
+
+Implementation rules:
+
+- State lives in `uiCardStyle` slices; `applyUiCardStyle` mirrors the five choices onto `<html>` as `data-card-style-<surface>` attributes. CSS rules key off those attributes, so no component subscribes to render a style.
+- Translucent bases are derived with `color-mix(in oklab, var(--color-card) X%, transparent)` from existing tokens, so light/dark and all four color themes adapt automatically.
+- Card styles override surface tokens and effects only. They must not change information density, spacing rhythm, or component layout, same as style themes.
+- Large-scale `backdrop-filter` costs compositing time. Rules fall back to opaque surfaces under `prefers-reduced-transparency: reduce`.
+
 ## Color Palette
 
 ### Core semantic colors

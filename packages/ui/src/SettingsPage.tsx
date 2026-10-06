@@ -108,6 +108,7 @@ import {
   normalizeUiFontFamilyCjk,
   normalizeUiFontFamilyLatin,
 } from "@/lib/uiFontFamily.js";
+import type { UiCardStyle, UiCardStyleSurface } from "@/lib/uiCardStyle.js";
 import type { SettingsSectionId } from "@/lib/settingsNavigation.js";
 import { requestPluginStoreOpen } from "@/lib/pluginStoreNavigation.js";
 import {
@@ -351,6 +352,16 @@ export function SettingsPage({
   const setUiFontFamilyLatin = useZCodeStore((state) => state.setUiFontFamilyLatin);
   const uiFontFamilyCjk = useZCodeStore((state) => state.uiFontFamilyCjk);
   const setUiFontFamilyCjk = useZCodeStore((state) => state.setUiFontFamilyCjk);
+  const uiCardStyleSidebar = useZCodeStore((state) => state.uiCardStyleSidebar);
+  const setUiCardStyleSidebar = useZCodeStore((state) => state.setUiCardStyleSidebar);
+  const uiCardStyleCardLarge = useZCodeStore((state) => state.uiCardStyleCardLarge);
+  const setUiCardStyleCardLarge = useZCodeStore((state) => state.setUiCardStyleCardLarge);
+  const uiCardStyleCardSmall = useZCodeStore((state) => state.uiCardStyleCardSmall);
+  const setUiCardStyleCardSmall = useZCodeStore((state) => state.setUiCardStyleCardSmall);
+  const uiCardStylePanel = useZCodeStore((state) => state.uiCardStylePanel);
+  const setUiCardStylePanel = useZCodeStore((state) => state.setUiCardStylePanel);
+  const uiCardStyleBackground = useZCodeStore((state) => state.uiCardStyleBackground);
+  const setUiCardStyleBackground = useZCodeStore((state) => state.setUiCardStyleBackground);
   const notificationEnabled = useZCodeStore((state) => state.notificationEnabled);
   const setNotificationEnabled = useZCodeStore((state) => state.setNotificationEnabled);
   const notificationSoundEnabled = useZCodeStore((state) => state.notificationSoundEnabled);
@@ -1353,6 +1364,36 @@ export function SettingsPage({
       }),
     [setUiFontFamilyCjk, setUiFontFamilyLatin],
   );
+  const handleUiCardStyleSurfaceChange = useCallback(
+    (surface: UiCardStyleSurface, style: UiCardStyle) =>
+      runUserAction({
+        input: {
+          featureId: "settings.appearance",
+          action: "change_ui_card_style",
+          trigger: "select",
+        },
+        operation: () => {
+          // setter 自带 normalize、持久化、DOM 应用与广播，这里只按区域分发。
+          const setters: Record<UiCardStyleSurface, (value: UiCardStyle) => void> = {
+            sidebar: setUiCardStyleSidebar,
+            cardLarge: setUiCardStyleCardLarge,
+            cardSmall: setUiCardStyleCardSmall,
+            panel: setUiCardStylePanel,
+            background: setUiCardStyleBackground,
+          };
+          setters[surface](style);
+        },
+        completed: { resultSource: "local_commit", valueAfter: `${surface}:${style}` },
+        failureStage: "local_commit",
+      }),
+    [
+      setUiCardStyleBackground,
+      setUiCardStyleCardLarge,
+      setUiCardStyleCardSmall,
+      setUiCardStylePanel,
+      setUiCardStyleSidebar,
+    ],
+  );
   const activeSectionMeta = settingsSections.find((section) => section.id === activeSection);
   // 灰度裁决异步到达：sections 列表可能在挂载后变化（如 computerUse 区被灰度移除）。
   // 若用户正停留在被移除的 section，回落到第一个可见区，避免整页 return null。
@@ -1829,6 +1870,14 @@ export function SettingsPage({
                             }
                             uiFontFamilyCjk={uiFontFamilyCjk}
                             setUiFontFamilyCjk={(value) => handleUiFontFamilyChange("cjk", value)}
+                            uiCardStyle={{
+                              sidebar: uiCardStyleSidebar,
+                              cardLarge: uiCardStyleCardLarge,
+                              cardSmall: uiCardStyleCardSmall,
+                              panel: uiCardStylePanel,
+                              background: uiCardStyleBackground,
+                            }}
+                            onChangeUiCardStyle={handleUiCardStyleSurfaceChange}
                           />
                         ) : activeSection === "shortcuts" ? (
                           <ShortcutSettingsSection isDesktop={Boolean(isDesktop)} />
