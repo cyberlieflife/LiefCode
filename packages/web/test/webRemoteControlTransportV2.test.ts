@@ -241,20 +241,30 @@ describe("terminal 与 V2 假 relay 的线级契约", () => {
 
   it("网络和5xx保持500ms指数退避，上限10秒", async () => {
     let fail: "server" | "network" | undefined = "server";
-    const h = await fixture({
-      users: { jwt: "user-1" },
-      onHttp: (call) =>
-        (call.body as { role?: string }).role === "terminal" && fail
-          ? fail === "server"
-            ? { status: 503 }
-            : { networkError: true }
-          : undefined,
+    let tokenRequests = 0;
+    // fake timers 会阻塞内置 fetch 的连接池，失败阶段用内存响应驱动退避；
+    // 恢复后回退真实 fetch，仍然验证实际配对。
+    const tokenFetcher: typeof fetch = async () => {
+      tokenRequests += 1;
+      if (fail === "server") return new Response("", { status: 503 });
+      if (fail === "network") throw new TypeError("fetch failed");
+      return new Response(successBody, {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+    const h = await fixture({ users: { jwt: "user-1" } }, "jwt", tokenFetcher);
+    // fake timers 下真实 fetch 会卡在连接池；成功阶段回放预取的合法 token。
+    const preflight = await fetch(new URL("/api/v1/remote/token", h.relay.httpUrl), {
+      method: "POST",
+      headers: { Authorization: "Bearer jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "terminal" }),
     });
+    const successBody = await preflight.text();
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     h.terminal.start();
     await delay(60);
-    const tokens = () =>
-      h.relay.httpCalls.filter((r) => (r.body as { role?: string }).role === "terminal").length;
+    const tokens = () => tokenRequests;
     let count = 1;
     for (const ms of [500, 1000, 2000, 4000, 8000, 10000, 10000]) {
       await vi.advanceTimersByTimeAsync(ms - 1);

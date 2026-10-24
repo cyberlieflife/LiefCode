@@ -17,6 +17,7 @@ afterEach(async () => {
 
 async function fixture(
   options: Parameters<typeof createFakeRelayV2>[0] = { users: { jwt: "user" } },
+  tokenFetcher: typeof fetch = fetch,
 ) {
   const relay = await createFakeRelayV2(options);
   cleanups.push(() => relay.close());
@@ -35,7 +36,8 @@ async function fixture(
   const transport = new WebRemoteControlDeviceTransport({
     relayWsUrl: relay.wsUrl,
     deviceMid: "mid-1",
-    getToken: (signal) => createWebRemoteControlV2Http(relay.httpUrl).token("jwt", signal),
+    getToken: (signal) =>
+      createWebRemoteControlV2Http(relay.httpUrl, tokenFetcher).token("jwt", signal),
     resolveDeviceSid: async () => device.device_sid,
     meta: { name: "My desktop", platform: "darwin", version: "3.13.0" },
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -127,19 +129,30 @@ describe("desktop relay V2 transport", () => {
   it("token网络与5xx指数退避到30秒，auth_ack后重置", async () => {
     vi.spyOn(Math, "random").mockReturnValue(0.5);
     let failure: "network" | "server" | undefined = "server";
-    const f = await fixture({
-      users: { jwt: "user" },
-      onHttp: (call) => {
-        if (call.path.endsWith("/token") && failure)
-          return failure === "network" ? { networkError: true } : { status: 503 };
-      },
+    let tokenRequests = 0;
+    // fake timers 下真实 fetch 会卡在连接池；失败阶段用内存响应驱动退避，
+    // 恢复后用预取的合法 token 完成真实 WebSocket 配对。
+    const tokenFetcher: typeof fetch = async () => {
+      tokenRequests += 1;
+      if (failure === "server") return new Response("", { status: 503 });
+      if (failure === "network") throw new TypeError("fetch failed");
+      return new Response(successBody, {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+    const f = await fixture({ users: { jwt: "user" } }, tokenFetcher);
+    const preflight = await fetch(new URL("/api/v1/remote/token", f.relay.httpUrl), {
+      method: "POST",
+      headers: { Authorization: "Bearer jwt", "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "device" }),
     });
+    const successBody = await preflight.text();
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
     f.transport.start();
     await settle();
     let count = 1;
-    const tokenCalls = () =>
-      f.relay.httpCalls.filter((call) => call.path.endsWith("/token")).length;
+    const tokenCalls = () => tokenRequests;
     for (const ms of [1000, 2000, 4000, 8000, 16000, 30000, 30000]) {
       expect(tokenCalls()).toBe(count);
       await vi.advanceTimersByTimeAsync(ms - 1);

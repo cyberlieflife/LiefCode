@@ -21,6 +21,13 @@ import { ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE } from "../src/zcode
 import type { ZCodeAgentServiceEvent } from "../src/zcode-agent/zcodeAgent.js";
 import { getTasksIndexDatabasePath, setDataBaseDir } from "../src/paths.js";
 
+// 本机 PowerShell/CIM 启动加全表枚举超过 5 秒，按默认 3.5 秒预算查询必然超时，
+// 进程树回收会误报残留。这里放宽测试进程的清理预算，生产默认值保持不变。
+if (process.platform === "win32") {
+  process.env["ZCODE_WINDOWS_CLEANUP_BUDGET_MS"] = "15000";
+  process.env["ZCODE_WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS"] = "12000";
+}
+
 const protocolModelProperties = {
   inputFormat: {
     supportsText: true,
@@ -1148,6 +1155,18 @@ process.stdin.on("data", (chunk) => {
         result: {
           workspace: msg.params.workspace,
           fullRetentionEnabled: msg.params.preferences.fullRetentionEnabled,
+          updatedSessionCount: 0,
+        },
+      });
+      continue;
+    }
+    if (msg.method === "workspace/updateEditReadPolicy" && msg.id !== undefined) {
+      // LiefCode 新增的读前编辑策略同步；旧 fake agent 不响应会让就绪 Promise 永久等待。
+      send({
+        id: msg.id,
+        result: {
+          workspace: msg.params.workspace,
+          editRequiresReadEnabled: msg.params.editRequiresReadEnabled,
           updatedSessionCount: 0,
         },
       });

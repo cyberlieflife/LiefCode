@@ -30,6 +30,19 @@ const E2E_COVERAGE_STDIO_EOF_EXIT_WAIT_MS = 5_000;
 const PROCESS_TREE_FORCE_AFTER_MS = 2_000;
 const PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS = 1_000;
 const PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS = 250;
+// 慢速 CIM 机器（PowerShell 启动加全表枚举可超过 5 秒）可用这两个变量放宽
+// 关闭时的查询与总预算；默认值保持 Host 3.5s service phase 不变。
+const WINDOWS_CLEANUP_BUDGET_ENV = "ZCODE_WINDOWS_CLEANUP_BUDGET_MS";
+const PROCESS_TREE_WINDOWS_DEFAULT_BUDGET_MS =
+  PROCESS_TREE_FORCE_AFTER_MS +
+  PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS +
+  PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS;
+
+function positiveEnvMs(name: string): number | undefined {
+  const parsed = Number(process.env[name]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 const processTreeLogger = createServiceLogger("zcode-agent-process-tree");
 
 export class ZCodeStdioTransport implements ZCodeProtocolTransport {
@@ -142,9 +155,12 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
     const windowsCleanupDeadlineAtMs =
       process.platform === "win32"
         ? cleanupStartedAtMs +
-          forceBudgetMs +
-          PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS +
-          PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS
+          Math.max(
+            forceBudgetMs +
+              PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS +
+              PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS,
+            positiveEnvMs(WINDOWS_CLEANUP_BUDGET_ENV) ?? PROCESS_TREE_WINDOWS_DEFAULT_BUDGET_MS,
+          )
         : undefined;
     this.cleanupProcessTreeSnapshot ??= await this.captureCleanupSnapshot(
       windowsCleanupDeadlineAtMs,

@@ -35,6 +35,13 @@ import { setZCodeStdioTapDevEnabled } from "../src/zcode-agent/zcodeStdioTapDevC
 import { ZCodeStdioTransport } from "../src/zcode-agent/zcodeStdioTransport.js";
 import { CuaAgentAdmissionGate } from "../src/cua-permission-broker/cuaAgentAdmissionGate.js";
 
+// 本机 PowerShell/CIM 启动加全表枚举超过 5 秒，按默认 3.5 秒预算查询必然超时，
+// 进程树回收会误报残留。这里放宽测试进程的清理预算，生产默认值保持不变。
+if (process.platform === "win32") {
+  process.env["ZCODE_WINDOWS_CLEANUP_BUDGET_MS"] = "15000";
+  process.env["ZCODE_WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS"] = "12000";
+}
+
 function createDeferred<T>() {
   let resolve!: (value: T | PromiseLike<T>) => void;
   let reject!: (reason?: unknown) => void;

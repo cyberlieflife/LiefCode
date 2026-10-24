@@ -5,6 +5,9 @@ import type {
 } from "#src/process/processTreeTypes.js";
 
 const WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS = 2_500;
+// 慢速 CIM 机器（PowerShell 启动加全表枚举可超过 5 秒）需要显式放宽查询上限，
+// 与关闭预算分开配置；默认值保持现有行为。
+const WINDOWS_PROCESS_LOOKUP_TIMEOUT_ENV = "ZCODE_WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS";
 const DOTNET_UNIX_EPOCH_TICKS = 621_355_968_000_000_000n;
 const TICKS_PER_MICROSECOND = 10n;
 const WINDOWS_START_TIME_PREFIX = "windows-utc-us:";
@@ -28,6 +31,11 @@ function remainingWindowsCleanupMs(options: ProcessTreeTerminatorOptions): numbe
   return options.windowsCleanupDeadlineAtMs === undefined
     ? undefined
     : Math.max(options.windowsCleanupDeadlineAtMs - Date.now(), 0);
+}
+
+function windowsProcessLookupTimeoutMs(): number {
+  const parsed = Number(process.env[WINDOWS_PROCESS_LOOKUP_TIMEOUT_ENV]);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS;
 }
 
 function boundedWindowsLookupTimeoutMs(
@@ -165,7 +173,7 @@ export async function readWindowsProcessListAsync(
   const request = new Promise<readonly ProcessIdentity[]>((resolve) => {
     // 移除 WMIC 后直接走受支持的 CIM 后端，避免 ENOENT fallback 消耗 cleanup
     // deadline；查询失败返回空身份，调用方继续沿 fail-closed 路径观察退出。
-    const timeoutMs = boundedWindowsLookupTimeoutMs(WINDOWS_PROCESS_LOOKUP_TIMEOUT_MS, options);
+    const timeoutMs = boundedWindowsLookupTimeoutMs(windowsProcessLookupTimeoutMs(), options);
     if (timeoutMs <= 0) {
       resolve([]);
       return;
