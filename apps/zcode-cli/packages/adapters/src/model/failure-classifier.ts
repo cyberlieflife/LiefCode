@@ -20,6 +20,7 @@ import {
   parseRetryAfterMs,
   unwrapRetryError,
 } from "./failure-inspection.js";
+import { isTransientUpstreamRelayFailure } from "./failure-upstream-relay.js";
 import { readMappedAiSdkProviderBusinessError } from "./failure-ai-sdk-provider-error.js";
 import { isTlsFailure } from "./failure-tls.js";
 import {
@@ -217,6 +218,19 @@ export function classifyModelFailure(
 
   if (statusCode === 400 || statusCode === 422) {
     const contextExceeded = isContextExceededFailure(unwrapped);
+    // 中转网关把上游不可达包成 400 时，正文只有通用上游错误与 request id；
+    // 请求本身没有问题，重发同一请求可以恢复，因此不按 invalid_request 终止。
+    if (!contextExceeded && isTransientUpstreamRelayFailure(unwrapped)) {
+      return {
+        code: ModelErrorCode.ModelRequestFailed,
+        message: "Provider reported an upstream error for the model request.",
+        reason: ModelFailureReasonValue.ServerError,
+        retryReason: ModelRetryReasonValue.ServerError,
+        retryable: true,
+        retryAfterMs,
+        statusCode,
+      };
+    }
     return {
       code: contextExceeded
         ? ModelErrorCode.ModelContextExceeded
@@ -413,6 +427,18 @@ function classifyProviderBusinessFailure(
   }
 
   if (effectiveStatusCode === 400 || effectiveStatusCode === 422) {
+    // 与通用分类器同一规则：中转网关把上游不可达包成 400 时按瞬态失败重试。
+    if (isTransientUpstreamRelayFailure(error)) {
+      return {
+        code: ModelErrorCode.ModelRequestFailed,
+        message: "Provider reported an upstream error for the model request.",
+        reason: ModelFailureReasonValue.ServerError,
+        retryReason: ModelRetryReasonValue.ServerError,
+        retryable: true,
+        retryAfterMs,
+        statusCode: effectiveStatusCode,
+      };
+    }
     return {
       code: ModelErrorCode.InvalidModelRequest,
       message,
