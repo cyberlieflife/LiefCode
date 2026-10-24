@@ -1193,7 +1193,13 @@ export class ConversationV4Gateway {
    * 旧宿主无 getSessionWorkspaceId → 整体 no-op。
    */
   private fanOutToIndex(sessionId: string, event: SessionEvent): void {
-    if (event.type === SessionEventType.ModelStreaming) return;
+    // 流式正文是高频事件，但任务卡与列表的小字需要跟到当前输出；
+    // 丢弃会让后台会话一直停在上一段正文。这里与工作流进度共用
+    // leading + trailing 窗口：窗内合并为窗末一帧，终态仍在一个窗口内送达。
+    if (event.type === SessionEventType.ModelStreaming) {
+      this.indexFanoutThrottle.request(sessionId);
+      return;
+    }
     // 工作流进度同样是高频流（实测 8s 4000 条），但列表要继续动，所以不是丢弃而是
     // leading + trailing 窗口节流：窗内合并为窗末一帧，终态仍在一个窗口内送达。
     if (event.type === SessionEventType.DynamicWorkflowRunProgress) {

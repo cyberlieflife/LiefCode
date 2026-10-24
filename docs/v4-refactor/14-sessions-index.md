@@ -56,11 +56,12 @@ session runtime/product projection event
 默认每条会话事件 fan-out 一次：摘要有变化就立刻 flush 给列表订阅者。高频事件流必须先降频，
 否则列表订阅者会按事件频率重算 task 行：
 
-- `ModelStreaming`（正文流式增量）完全不触发列表重算，预览在 turn 收口或其他事件时更新；
-- `DynamicWorkflowRunProgress`（工作流运行进度，一次运行可达每秒数百条）按 leading + trailing
-  窗口节流：静默后的第一条立即发布，`WORKFLOW_PROGRESS_INDEX_FANOUT_MS`（250ms）窗口内的后续
-  进度合并为窗口末尾的一次发布。侧栏运行行（`workflowActivity`）刷新率因此不超过 4Hz，运行终态
-  仍在一个窗口内送达；
+- `ModelStreaming`（正文流式增量）按 leading + trailing 窗口节流：静默后的第一条立即发布，
+  `SESSIONS_INDEX_FANOUT_MS`（250ms）窗口内的后续增量合并为窗口末尾的一次发布。`lastAssistantPreview`
+  因此能跟到当前输出，后台会话的列表/任务卡小字不会停在上一段正文；
+- `DynamicWorkflowRunProgress`（工作流运行进度，一次运行可达每秒数百条）与流式正文共用同一扇窗：
+  窗口内的事件合并为窗口末尾的一次发布。侧栏运行行（`workflowActivity`）刷新率因此不超过 4Hz，
+  运行终态仍在一个窗口内送达；
 - 其余事件保持即时发布。窗口内发生的任何即时发布都满足待发的 trailing，并把它取消，不重复发帧。
 
 节流只改变帧节奏：`record.updatedAt` / `lastActivityAt` 语义与 delta 顺序都不变。窗口定时器按

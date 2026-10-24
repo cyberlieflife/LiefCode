@@ -915,3 +915,8 @@ exceptions:
       - packages/ui/src/WebRemoteControlThemeMenu.tsx
       - packages/web-share/src/main.tsx
     reason: Codex 配色方案沿用现有远控主题字段与分享入口，只追加配色枚举和菜单项；这些上游文件相对推送基线属于首次出现，接管 shared、ui 与 web-share 需要单独的模块边界重构。
+  - id: zcode-cli-sessions-index-fanout-throttle-unmanaged-file
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/sessions-index-fanout-throttle.ts
+    reason: sessions-index 高频事件节流从网关拆出的独立调度文件，bootstrap 目录尚未登记受管模块；为单个调度文件建立模块边界需要单独的架构重构。

@@ -3,10 +3,11 @@
 //
 // 根因备忘：一次工作流运行的引擎事件以 DynamicWorkflowRunProgress 回到父会话，实测 8s 内 4000 条。
 // 每条都 bump record.updatedAt，摘要因此条条有变化 → 旧实现条条 flush 一帧 sessions-index 增量
-// → 宿主重算 task 行 → renderer 按事件频率重拉任务列表。ModelStreaming 早已因同样的理由被排除。
+// → 宿主重算 task 行 → renderer 按事件频率重拉任务列表。ModelStreaming 与小字预览有同样的问题，
+// 因此两类高频事件共用同一扇窗：窗内合并为一次发布，而不是丢弃流式正文。
 
-/** 工作流进度事件的 fan-out 窗口：窗内的进度合并为窗末一次发布（侧栏运行行 ≤4Hz）。 */
-export const WORKFLOW_PROGRESS_INDEX_FANOUT_MS = 250;
+/** 高频事件（工作流进度、流式正文）的 fan-out 窗口：窗内合并为窗末一次发布（≤4Hz）。 */
+export const SESSIONS_INDEX_FANOUT_MS = 250;
 
 /** 定时器句柄对调度逻辑不透明：生产用 setTimeout，测试可注入任意实现。 */
 export type FanoutTimerHandle = unknown;
@@ -51,7 +52,7 @@ export class SessionsIndexFanoutThrottle {
 
   constructor(options: SessionsIndexFanoutThrottleOptions) {
     this.publish = options.publish;
-    this.windowMs = options.windowMs ?? WORKFLOW_PROGRESS_INDEX_FANOUT_MS;
+    this.windowMs = options.windowMs ?? SESSIONS_INDEX_FANOUT_MS;
     this.setTimer = options.setTimer ?? defaultSetTimer;
     this.clearTimer = options.clearTimer ?? defaultClearTimer;
   }

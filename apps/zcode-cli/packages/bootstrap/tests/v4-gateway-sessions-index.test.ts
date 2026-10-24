@@ -1,6 +1,6 @@
 // ConversationV4Gateway 的 sessions-index 集成测试（M5 ①，14-sessions-index）：
 //   1. subscribeSessionsIndex：store 摘要种子 + 已加载会话 live 投影覆盖 → snapshot 帧
-//   2. ingest 非流式事件 → 列表订阅者收到 session.upserted 增量帧（流式 ModelStreaming 不触发）
+//   2. ingest 非流式事件 → 列表订阅者立即收到 session.upserted；流式 ModelStreaming 按 250ms 窗口更新预览
 //   3. disposeSession → session.removed 增量帧
 //   4. 无 getSessionWorkspaceId 的旧宿主 → sessions-index 路径整体 no-op，不影响 conversation
 //   5. unsubscribeSessionsIndex 后不再收帧
@@ -717,7 +717,8 @@ describe("ConversationV4Gateway sessions-index 集成", () => {
     }
   });
 
-  it("ModelStreaming 高频增量不触发列表帧", async () => {
+  it("ModelStreaming 按 250ms 窗口更新列表预览", async () => {
+    vi.useFakeTimers();
     const stub: Stub = {
       frames: [],
       sessions: new Set(["live-1"]),
@@ -725,46 +726,62 @@ describe("ConversationV4Gateway sessions-index 集成", () => {
       stored: [],
     };
     const gateway = makeGateway(stub, { withIndexHooks: true });
-    gateway.ingest(
-      "live-1",
-      event("live-1", 1, SessionEventType.SessionCreated, {
-        mode: "default",
-        contextWindow: 200_000,
-      }),
-    );
-    await gateway.subscribeSessionsIndex({
-      topic: "sessions-index/ws-1",
-      connectionId: "conn-1",
-      clientMode: "desktop-continuous",
-    });
-    const before = indexFrames(stub).length;
-    gateway.ingest(
-      "live-1",
-      event("live-1", 2, SessionEventType.TurnStarted, { turnNumber: 1, input: "hi" }, "t1"),
-    );
-    gateway.ingest(
-      "live-1",
-      event(
+    try {
+      gateway.ingest(
         "live-1",
-        3,
-        SessionEventType.ModelStreaming,
-        { kind: "text_start", delta: "", done: false },
-        "t1",
-      ),
-    );
-    gateway.ingest(
-      "live-1",
-      event(
+        event("live-1", 1, SessionEventType.SessionCreated, {
+          mode: "default",
+          contextWindow: 200_000,
+        }),
+      );
+      await gateway.subscribeSessionsIndex({
+        topic: "sessions-index/ws-1",
+        connectionId: "conn-1",
+        clientMode: "desktop-continuous",
+      });
+      gateway.ingest(
         "live-1",
-        4,
-        SessionEventType.ModelStreaming,
-        { kind: "text_delta", delta: "abc", done: false },
-        "t1",
-      ),
-    );
-    const emitted = indexFrames(stub).slice(before);
-    // TurnStarted 触发一帧（phase→running），两条 ModelStreaming 不再触发
-    expect(emitted.length).toBe(1);
+        event("live-1", 2, SessionEventType.TurnStarted, { turnNumber: 1, input: "hi" }, "t1"),
+      );
+      gateway.ingest(
+        "live-1",
+        event(
+          "live-1",
+          3,
+          SessionEventType.ModelStreaming,
+          { kind: "text_start", delta: "", done: false },
+          "t1",
+        ),
+      );
+      const afterLeadingEdge = indexFrames(stub).length;
+      // 窗内的连续增量合并，不再按 chunk 出帧。
+      for (let index = 0; index < 10; index += 1) {
+        gateway.ingest(
+          "live-1",
+          event(
+            "live-1",
+            4 + index,
+            SessionEventType.ModelStreaming,
+            { kind: "text_delta", delta: `x${index}`, done: false },
+            "t1",
+          ),
+        );
+      }
+      expect(indexFrames(stub).length).toBe(afterLeadingEdge);
+
+      vi.advanceTimersByTime(250);
+      const frames = [...indexFrames(stub)].reverse();
+      const lastUpserted = frames
+        .filter((frame) => frame.payload.kind === "deltas")
+        .flatMap((frame) => (frame.payload.kind === "deltas" ? frame.payload.deltas : []))
+        .find((delta) => delta.op === "session.upserted");
+      expect(
+        lastUpserted?.op === "session.upserted" ? lastUpserted.session.lastAssistantPreview : null,
+      ).toBe("x0x1x2x3x4x5x6x7x8x9");
+    } finally {
+      gateway.dispose();
+      vi.useRealTimers();
+    }
   });
 
   it("关闭运行实例不发删除事件，列表仍保留持久化会话", async () => {
@@ -1026,7 +1043,7 @@ describe("ConversationV4Gateway sessions-index 工作流进度节流", () => {
   beforeEach(() => vi.useFakeTimers());
   afterEach(() => vi.useRealTimers());
 
-  /** 与 WORKFLOW_PROGRESS_INDEX_FANOUT_MS 对齐；测试不导入常量，窗口值本身也是被测事实。 */
+  /** 与 SESSIONS_INDEX_FANOUT_MS 对齐；测试不导入常量，窗口值本身也是被测事实。 */
   const WINDOW_MS = 250;
   const RUN_ID = "dwfrun-1";
 
