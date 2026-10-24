@@ -1,6 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "../../share-ui/src/styles.css";
-import { applyTheme, type Theme } from "../../ui/src/useTheme.js";
+import { applyTheme, readStyleThemePreference, type Theme } from "../../ui/src/useTheme.js";
 import {
   ConversationShareLandingLoader,
   ConversationShareLandingStatus,
@@ -34,7 +34,7 @@ function resolveThemePreference(): Theme {
 // 否则页面外壳使用默认浅色 token，而 MessageResponse 会按 zai-dark 选择 github-dark，
 // 最终产生浅色页面套深色 Markdown 代码块的混合样式。
 const INITIAL_THEME = resolveThemePreference();
-applyTheme(INITIAL_THEME);
+applyTheme(INITIAL_THEME, readStyleThemePreference(INITIAL_THEME));
 
 function isOAuthCallback(): boolean {
   return (

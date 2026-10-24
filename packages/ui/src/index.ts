@@ -33,11 +33,16 @@ export { SSHDialog, RemoteConnectionDialog } from "./SSHDialog.js";
 export { useTheme } from "./useTheme.js";
 export {
   applyTheme,
+  isStyleTheme,
   isTheme,
   normalizeThemePreference,
+  readStyleThemePreference,
   resolveAppliedTheme,
   resolveStyleTheme,
   resolveTheme,
+  STYLE_THEME_STORAGE_KEY,
+  THEME_STORAGE_KEY,
+  toggleThemeMode,
 } from "./useTheme.js";
 export type { StyleTheme, Theme } from "./useTheme.js";
 export { useTestActions } from "./test-actions.js";

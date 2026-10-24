@@ -1,5 +1,6 @@
 import { useBotTopicPreparations } from "@/v4/BotTopicPreparation.js";
 import { withTopicPreparationMessages } from "@/v4/topicPreparationRenderUnits.js";
+import type { StyleTheme } from "@/useTheme.js";
 /* oxlint-disable eslint(max-lines) -- ConversationTimeline 集中承载虚拟滚动、滚动锚定、loadOlder 与 find 高亮协调；拆散会让同一滚动状态跨文件传递。 */
 import {
   Component,
@@ -329,6 +330,8 @@ export interface ConversationTimelineProps {
   headerSlot?: ReactNode;
   /** 草稿态让 emptyState 与同一个 bottomDock 作为整体居中，不重挂 composer。 */
   centerEmptyStateWithDock?: boolean;
+  /** UI 方案；Codex 把问候语居中、输入框贴底，与默认的整组居中区分。 */
+  styleTheme?: StyleTheme;
   /** 窄屏/粗指针视口保留紧凑居中布局，不复用桌面草稿安全间距。 */
   compactEmptyStateWithDock?: boolean;
   /**
@@ -400,6 +403,7 @@ function ConversationTimelineImpl({
   emptyState,
   headerSlot,
   centerEmptyStateWithDock = false,
+  styleTheme = "default",
   compactEmptyStateWithDock = false,
   floatingComposerDock = false,
   onComposerDockHeightChange,
@@ -524,6 +528,8 @@ function ConversationTimelineImpl({
   const turnNavigatorQueryRowIdsRef = useRef(turnNavigatorQueryRowIds);
   turnNavigatorQueryRowIdsRef.current = turnNavigatorQueryRowIds;
   const centeredEmptyLayout = centerEmptyStateWithDock && renderUnits.length === 0;
+  // Codex 方案：问候语占满剩余空间并垂直居中，composer 沉到底部。
+  const codexEmptyLayout = centeredEmptyLayout && styleTheme === "codex";
   const responsiveCenteredEmptyLayout = centeredEmptyLayout && !compactEmptyStateWithDock;
   // 高频值经 ref 供稳定回调读取（不进依赖数组）。
   const rowsRef = useRef(rows);
@@ -1999,7 +2005,10 @@ function ConversationTimelineImpl({
             // 固定高度断点会在窗口跨过临界值时让问候语与 composer 整组跳动。
             // 顶部留白按视口高度伸缩，输入框的位置不再受下方推荐列表高度影响；
             // 空间不足时顶部可收缩到底线，底部继续随内容自然排布。
-            responsiveCenteredEmptyLayout
+            codexEmptyLayout
+              ? // Codex：问候语在剩余空间里居中，输入框沉底，不共用同一段垂直居中轨道。
+                "flex min-h-full flex-col items-center px-4"
+              : responsiveCenteredEmptyLayout
               ? // Bugfix 根因：动态修改原生窗口下限会把内容换行反馈到窗口拖动，产生阻尼；
                 // 容器保留固有最小高度，由外层 timeline 统一承接受限高度下的溢出内容。
                 "flex min-h-full flex-col items-center px-4 before:block before:min-h-[52px] before:w-full before:shrink before:basis-[29dvh] before:content-[''] after:block after:min-h-4 after:w-full after:flex-1 after:content-['']"
@@ -2015,9 +2024,11 @@ function ConversationTimelineImpl({
           {renderUnits.length === 0 && !headerSlot ? (
             <div
               className={cn(
-                centeredEmptyLayout
-                  ? "flex w-full max-w-2xl shrink-0 items-center justify-center"
-                  : "min-h-0 flex-1",
+                codexEmptyLayout
+                  ? "flex w-full max-w-2xl flex-1 items-center justify-center"
+                  : centeredEmptyLayout
+                    ? "flex w-full max-w-2xl shrink-0 items-center justify-center"
+                    : "min-h-0 flex-1",
                 !centeredEmptyLayout && summaryPanelInlineOffsetClassName,
               )}
             >
@@ -2154,11 +2165,13 @@ function ConversationTimelineImpl({
                 // 输入区贴在时间线底部、不随消息滚动，也不被滚动容器裁剪。
                 floatingComposerDock
                   ? "absolute inset-x-0 bottom-0"
-                  : responsiveCenteredEmptyLayout
-                    ? "mt-3 shrink-0"
-                    : centeredEmptyLayout
-                      ? "shrink-0"
-                      : "sticky bottom-0",
+                  : codexEmptyLayout
+                    ? "mt-6 shrink-0 pb-8"
+                    : responsiveCenteredEmptyLayout
+                      ? "mt-3 shrink-0"
+                      : centeredEmptyLayout
+                        ? "shrink-0"
+                        : "sticky bottom-0",
               )}
             >
               <div

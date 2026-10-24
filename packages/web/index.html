@@ -18,11 +18,30 @@
         // Bugfix: Web 远控跨 workspace 跳转时，JS bundle 还没执行前就会先渲染启动壳。
         // 这里提前按本地主题偏好决定首屏底色，避免 dark 用户在这一帧看到白底闪烁。
         const STORAGE_KEY = "zcode-theme";
+        const STYLE_THEME_STORAGE_KEY = "zcode-style-theme";
         const DEFAULT_THEME = "zai-dark";
         const BROWSER_THEME_COLORS = {
           dark: "#161616",
           light: "#f8f8f8",
         };
+        // 配色家族各自的画布色，用于首帧 theme-color；System 归入 Zai。
+        const PALETTE_BACKGROUNDS = {
+          "zai-dark": "#161616",
+          "zai-light": "#f8f8f8",
+          "claude-dark": "#181715",
+          "claude-light": "#faf9f5",
+          "codex-dark": "#212121",
+          "codex-light": "#ffffff",
+        };
+        const PALETTE_CLASSES = [
+          "theme-zai-light",
+          "theme-zai-dark",
+          "theme-claude-light",
+          "theme-claude-dark",
+          "theme-codex-light",
+          "theme-codex-dark",
+        ];
+        const STYLE_CLASSES = ["style-default", "style-claude", "style-codex"];
         const BOOTSTRAP_SNAPSHOT_KEY = "zcode:web-remote-control:bootstrap-shell";
 
         const normalizeResolvedTheme = (theme) => {
@@ -32,15 +51,36 @@
           if (theme === "zai-light") return "light";
           if (theme === "claude-dark") return "dark";
           if (theme === "claude-light") return "light";
+          if (theme === "codex-dark") return "dark";
+          if (theme === "codex-light") return "light";
           return theme;
         };
 
-        const syncBrowserThemeSurface = (theme) => {
+        // 首帧就挂上配色类，避免 bundle 执行前先按默认 Zai 渲染一帧。
+        const normalizePaletteTheme = (theme, resolved) => {
+          if (theme === "light") return "zai-light";
+          if (theme === "dark") return "zai-dark";
+          if (theme === "system") return resolved === "dark" ? "zai-dark" : "zai-light";
+          if (PALETTE_BACKGROUNDS[theme]) return theme;
+          return resolved === "dark" ? "zai-dark" : "zai-light";
+        };
+
+        const resolveStyleTheme = (savedStyle, paletteTheme) => {
+          if (savedStyle === "default" || savedStyle === "claude" || savedStyle === "codex") {
+            return savedStyle;
+          }
+          return paletteTheme.indexOf("claude-") === 0 ? "claude" : "default";
+        };
+
+        const syncBrowserThemeSurface = (theme, paletteTheme) => {
           document.documentElement.setAttribute("data-zcode-browser-theme-surface", theme);
           document.documentElement.style.colorScheme = theme;
           document
             .querySelector('meta[name="theme-color"]')
-            ?.setAttribute("content", BROWSER_THEME_COLORS[theme]);
+            ?.setAttribute(
+              "content",
+              PALETTE_BACKGROUNDS[paletteTheme] || BROWSER_THEME_COLORS[theme],
+            );
           document.querySelector('meta[name="color-scheme"]')?.setAttribute("content", theme);
         };
 
@@ -97,14 +137,27 @@
               : normalizeResolvedTheme(saved);
           const fallbackTheme = resolved === "dark" ? "dark" : "light";
           const finalTheme = bootstrapTheme ?? fallbackTheme;
+          const paletteTheme = normalizePaletteTheme(saved, resolved === "dark" ? "dark" : "light");
+          const styleTheme = resolveStyleTheme(
+            localStorage.getItem(STYLE_THEME_STORAGE_KEY),
+            paletteTheme,
+          );
+          for (const className of PALETTE_CLASSES) {
+            document.documentElement.classList.remove(className);
+          }
+          document.documentElement.classList.add(`theme-${paletteTheme}`);
+          for (const className of STYLE_CLASSES) {
+            document.documentElement.classList.remove(className);
+          }
+          document.documentElement.classList.add(`style-${styleTheme}`);
           document.documentElement.setAttribute("data-zcode-bootstrap-theme", finalTheme);
-          syncBrowserThemeSurface(finalTheme);
+          syncBrowserThemeSurface(finalTheme, paletteTheme);
           if (finalTheme === "dark") {
             document.documentElement.classList.add("dark");
           }
         } catch {
           document.documentElement.setAttribute("data-zcode-bootstrap-theme", "dark");
-          syncBrowserThemeSurface("dark");
+          syncBrowserThemeSurface("dark", "zai-dark");
           document.documentElement.classList.add("dark");
         }
       })();

@@ -11,10 +11,15 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import type { Theme } from "@/useTheme.js";
 
+// 手机端只提供配色方案；UI 方案沿用桌面同步值，避免移动端菜单过长。
 const MOBILE_THEME_OPTIONS: Theme[] = [
   "system",
   "zai-dark",
   "zai-light",
+  "claude-dark",
+  "claude-light",
+  "codex-dark",
+  "codex-light",
 ];
 
 export function WebRemoteControlThemeMenu() {

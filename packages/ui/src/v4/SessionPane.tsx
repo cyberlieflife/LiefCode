@@ -2040,6 +2040,7 @@ export function SessionPane({
   // 注入模式对齐 PermissionDialog：theme/codePreviewSettings 在宿主取 store，
   // 经稳定引用的 rowContext 下发给 memo 行组件（MessageResponse/ToolCallBlocks）。
   const theme = useZCodeStoreWithDefault((state) => state.theme, "system");
+  const styleTheme = useZCodeStoreWithDefault((state) => state.styleTheme, "default");
   const codePreviewSettings = useZCodeStoreWithDefault(
     (state) => state.codePreviewSettings,
     DEFAULT_CODE_PREVIEW_SETTINGS,
@@ -5633,20 +5634,22 @@ export function SessionPane({
       {isDraft &&
       !isFloatingPresentation &&
       (!isOfficeMode || sharedSettings?.proactiveSuggestionsEnabled === true) ? (
-        <ConversationDraftSuggestedPromptsContainer
-          className={isOfficeMode ? "mt-4" : "mt-6"}
-          proactive={isOfficeMode}
-          onOpenAutomations={
-            onOpenAutomationsMain && !compactForRemoteControl
-              ? (automationTab) => onOpenAutomationsMain(undefined, automationTab)
-              : undefined
-          }
-          workspacePath={workspacePath}
-          workspaceIdentity={workspaceIdentity}
-          remoteSessionId={remoteSessionId ?? undefined}
-          isWebRemoteControl={compactForRemoteControl}
-          isDesktop={isDesktop}
-        />
+        <div data-v4-draft-suggested-prompts="true">
+          <ConversationDraftSuggestedPromptsContainer
+            className={isOfficeMode ? "mt-4" : "mt-6"}
+            proactive={isOfficeMode}
+            onOpenAutomations={
+              onOpenAutomationsMain && !compactForRemoteControl
+                ? (automationTab) => onOpenAutomationsMain(undefined, automationTab)
+                : undefined
+            }
+            workspacePath={workspacePath}
+            workspaceIdentity={workspaceIdentity}
+            remoteSessionId={remoteSessionId ?? undefined}
+            isWebRemoteControl={compactForRemoteControl}
+            isDesktop={isDesktop}
+          />
+        </div>
       ) : null}
     </>
   );
@@ -5865,6 +5868,7 @@ export function SessionPane({
               >
                 <ConversationTimeline
                   compactForRemoteControl={compactForRemoteControl}
+                  styleTheme={styleTheme}
                   scrollToBottomActionRef={timelineScrollToBottomRef}
                   scrollToQueryActionRef={timelineScrollToQueryRef}
                   selectionPanelLayoutContainerRef={conversationLayoutContainerRef}
@@ -5923,6 +5927,9 @@ export function SessionPane({
                       <div data-testid={TID_CHAT_EMPTY} className="w-full">
                         <ConversationDraftEmptyState
                           compactForRemoteControl={compactForRemoteControl}
+                          styleTheme={styleTheme}
+                          projectMenu={draftComposerHeader}
+                          hasProject={composerProjectId != null}
                         />
                       </div>
                     ) : null

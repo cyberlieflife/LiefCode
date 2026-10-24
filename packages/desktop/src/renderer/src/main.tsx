@@ -18,6 +18,8 @@ import {
   setReactErrorArmsReporter,
   applyTheme,
   isTheme,
+  readStyleThemePreference,
+  THEME_STORAGE_KEY,
 } from "@zcode/ui";
 import "@zcode/ui/styles.css";
 import { connectViaMessagePort, createMessagePortServiceConnection } from "@zcode/client";
@@ -78,11 +80,12 @@ function registerE2EStoreBridgesIfEnabled() {
   });
 }
 
-// 初始化主题：默认 Zai dark，后续由 useTheme hook 接管。
-// 复用 useTheme 的 applyTheme，避免这里再维护一份主题取值与 class 映射。
+// 初始化主题：默认 Zai dark，后续由 store 接管。
+// 配色与 UI 方案分别持久化，首帧必须一起应用，避免先渲染默认圆角再跳变。
 {
-  const saved = localStorage.getItem("zcode-theme") || "zai-dark";
-  applyTheme(isTheme(saved) ? saved : "zai-dark");
+  const saved = localStorage.getItem(THEME_STORAGE_KEY) || "zai-dark";
+  const theme = isTheme(saved) ? saved : "zai-dark";
+  applyTheme(theme, readStyleThemePreference(theme));
 }
 
 const isMacDesktop = navigator.userAgent.includes("Mac");

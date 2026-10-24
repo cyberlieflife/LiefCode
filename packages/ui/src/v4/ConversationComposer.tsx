@@ -117,6 +117,7 @@ import {
   type ChatComposerAttachment,
 } from "@/lib/chatAttachments.js";
 import { resolveChatPlaceholderKey } from "@/lib/chatPlaceholder.js";
+import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
 import {
   resolveChatEnterShortcut,
   resolveChatEnterSubmits,
@@ -1874,6 +1875,7 @@ function ConversationComposerImpl({
     layout === "inline" && canStop
       ? formatConversationWorkDuration(workingDurationMs, intl, locale)
       : null;
+  const codexStyle = useZCodeStoreWithDefault((state) => state.styleTheme, "default") === "codex";
   const normalPlaceholder = workingDurationLabel
     ? intl.formatMessage({ id: "chat.history.workingFor" }, { duration: workingDurationLabel })
     : intl.formatMessage({
@@ -1882,6 +1884,7 @@ function ConversationComposerImpl({
           isTaskProcessing: canStop,
           // 单行输入框放不下完整的新任务提示，沿用手机远控的短文案。
           compactNewTask: compactMobilePlaceholder || layout === "inline",
+          codexStyle,
         }),
       });
   const sendTooltipTitle = intl.formatMessage({

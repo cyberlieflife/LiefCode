@@ -185,7 +185,7 @@ contracts/spec:   packages/shared protocol.ts / channels.ts / validation.ts / zc
 ## UI 细节
 
 - 顶部 tab 用 `Tabs variant="line"`（与设置页插件 tab 同款胶囊触发器），test id `resource-manager-tab-{cpu|memory|storage}`；默认 CPU。
-- 窗口 900×600，系统默认标题栏；主题与字号沿用主窗口的 `localStorage`（`zcode-theme` / UI font size），语言用 `ZCodeIntlProvider` 的本地偏好。
+- 窗口 900×600，系统默认标题栏；配色方案、UI 方案与字号沿用主窗口的 `localStorage`（`zcode-theme` / `zcode-style-theme` / UI font size），语言用 `ZCodeIntlProvider` 的本地偏好。
 - 指标卡：`bg-card border-card-border rounded-xl`；进度条底色 `bg-surface-hover`、整机段 `bg-foreground-subtlest/40`（灰）、ZCode 段 `bg-brand`（彩）。
 - 分组：三组固定顺序（基础服务 / 内置插件 / 社区插件），组头显示进程数、CPU 小计、内存小计；空组显示“暂无进程”。默认展开基础服务，其余按需展开；展开状态只存组件内。
 - 列表行：名称（`font-medium`，`title` 为完整名）、PID（`font-mono`）、CPU、内存；未采样行 CPU/内存显示 `—`。

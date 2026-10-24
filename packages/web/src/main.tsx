@@ -23,6 +23,7 @@ import {
   isTheme,
   normalizeThemePreference,
   playTaskNotificationSound,
+  readStyleThemePreference,
   setStreamClientId,
   setWebRemoteControlTerminalTransportState,
   type Theme,
@@ -194,14 +195,14 @@ function resolveWebThemePreference(defaultTheme: Theme = WEB_REMOTE_CONTROL_DEFA
   return normalizeThemePreference(isTheme(saved) ? saved : defaultTheme);
 }
 
-// 初始化主题：默认 Zai dark，后续由 useTheme hook 接管。
-// 复用 useTheme 的 applyTheme，避免这里再维护一份主题取值与 class 映射。
+// 初始化主题：默认 Zai dark，后续由 store 接管。
+// 配色与 UI 方案分别持久化，首帧必须一起应用。
 {
   // 分享页没有本地主题配置时使用浅色，已有配置仍然沿用；其他 Web 页面继续默认深色。
   const saved = resolveWebThemePreference(
     isConversationSharePath(window.location.pathname) ? "zai-light" : undefined,
   );
-  applyTheme(saved);
+  applyTheme(saved, readStyleThemePreference(saved));
 }
 
 async function resolveFeedbackUrl(): Promise<string | undefined> {

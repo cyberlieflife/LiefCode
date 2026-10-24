@@ -7,16 +7,20 @@ export type Theme =
   | "zai-dark"
   | "claude-light"
   | "claude-dark"
+  | "codex-light"
+  | "codex-dark"
   | "system";
 export type ResolvedTheme = "light" | "dark";
 
 /**
- * 样式主题（几何、阴影、排版）与配色主题分开。
- * 界面上不单独暴露样式选择器：选中 Claude 配色时同时挂上 Claude 样式层。
+ * UI 方案（几何、阴影、排版）与配色方案分开存储。
+ * default 保持既有几何；claude / codex 各自覆盖共享的圆角与阴影 token。
  */
-export type StyleTheme = "default" | "claude";
+export type StyleTheme = "default" | "claude" | "codex";
 
-const STORAGE_KEY = "zcode-theme";
+/** 配色方案存储键；UI 方案使用独立键，两者互不覆盖。 */
+export const THEME_STORAGE_KEY = "zcode-theme";
+export const STYLE_THEME_STORAGE_KEY = "zcode-style-theme";
 const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-zcode-browser-theme-surface";
 /** 挂在 documentElement 上的配色类，取值与 Theme 的非 system 值一一对应。 */
 const THEME_CLASS_NAMES = [
@@ -24,9 +28,13 @@ const THEME_CLASS_NAMES = [
   "theme-zai-dark",
   "theme-claude-light",
   "theme-claude-dark",
+  "theme-codex-light",
+  "theme-codex-dark",
 ] as const;
-/** 样式主题层类名，独立于配色类。 */
-const STYLE_THEME_CLASS_NAME = "style-claude";
+/** UI 方案类名始终收敛到一个，切换时不会残留上一个方案。 */
+const STYLE_THEME_CLASS_NAMES = ["style-default", "style-claude", "style-codex"] as const;
+
+const STYLE_THEME_VALUES: ReadonlySet<string> = new Set(["default", "claude", "codex"]);
 
 function getSystemTheme(): ResolvedTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -36,13 +44,31 @@ export function isClaudeTheme(theme: Theme): boolean {
   return theme === "claude-light" || theme === "claude-dark";
 }
 
-export function resolveStyleTheme(theme: Theme): StyleTheme {
-  return isClaudeTheme(theme) ? "claude" : "default";
+export function isCodexTheme(theme: Theme): boolean {
+  return theme === "codex-light" || theme === "codex-dark";
+}
+
+export function isStyleTheme(value: string | null | undefined): value is StyleTheme {
+  return typeof value === "string" && STYLE_THEME_VALUES.has(value);
+}
+
+/**
+ * 显式 UI 方案优先；没有保存过 UI 方案时按历史行为迁移：
+ * Claude 配色继续使用 Claude 方案，其余配色使用默认方案。
+ */
+export function resolveStyleTheme(theme: Theme, explicit?: StyleTheme | null): StyleTheme {
+  if (isStyleTheme(explicit)) return explicit;
+  return isClaudeTheme(normalizeThemePreference(theme)) ? "claude" : "default";
 }
 
 /** 不含 system 的主题直接映射明暗，供无 window 环境（如 SSR 兜底）复用。 */
 export function resolveStaticTheme(theme: Exclude<Theme, "system">): ResolvedTheme {
-  return theme === "dark" || theme === "zai-dark" || theme === "claude-dark" ? "dark" : "light";
+  return theme === "dark" ||
+    theme === "zai-dark" ||
+    theme === "claude-dark" ||
+    theme === "codex-dark"
+    ? "dark"
+    : "light";
 }
 
 export function resolveTheme(theme: Theme): ResolvedTheme {
@@ -65,6 +91,25 @@ export function normalizeThemePreference(theme: Theme): Theme {
   if (theme === "dark") return "zai-dark";
   if (theme === "light") return "zai-light";
   return theme;
+}
+
+/**
+ * 只翻转明暗，保留当前配色家族与 UI 方案。
+ * 旧实现直接写 light/dark，会被归一成 Zai，导致 Claude/Codex 配色丢失。
+ */
+export function toggleThemeMode(theme: Theme): Theme {
+  const family = isClaudeTheme(theme) ? "claude" : isCodexTheme(theme) ? "codex" : "zai";
+  const nextMode = resolveTheme(theme) === "dark" ? "light" : "dark";
+  return `${family}-${nextMode}` as Theme;
+}
+
+/** 读取 UI 方案偏好；缺失或非法时按配色方案迁移。 */
+export function readStyleThemePreference(theme: Theme): StyleTheme {
+  if (typeof localStorage === "undefined") {
+    return resolveStyleTheme(theme);
+  }
+  const saved = localStorage.getItem(STYLE_THEME_STORAGE_KEY);
+  return isStyleTheme(saved) ? saved : resolveStyleTheme(theme);
 }
 
 function setThemeMetaContent(name: "theme-color" | "color-scheme", content: string) {
@@ -98,19 +143,20 @@ function syncBrowserThemeSurface(resolved: ResolvedTheme) {
   }
 }
 
-export function applyTheme(theme: Theme) {
-  const resolved = resolveTheme(theme);
-  const appliedTheme = resolveAppliedTheme(theme);
+export function applyTheme(theme: Theme, styleTheme?: StyleTheme | null) {
+  const normalizedTheme = normalizeThemePreference(theme);
+  const resolved = resolveTheme(normalizedTheme);
+  const appliedTheme = resolveAppliedTheme(normalizedTheme);
   document.documentElement.classList.toggle("dark", resolved === "dark");
   // 配色类按 appliedTheme 逐一收敛，避免切换时残留上一个配色类的变量。
   for (const className of THEME_CLASS_NAMES) {
     document.documentElement.classList.toggle(className, `theme-${appliedTheme}` === className);
   }
-  // 样式主题层独立切换：Claude 配色带 Claude 样式，其余配色回落默认样式。
-  document.documentElement.classList.toggle(
-    STYLE_THEME_CLASS_NAME,
-    resolveStyleTheme(theme) === "claude",
-  );
+  // UI 方案层独立切换：显式偏好优先，未提供时按配色方案迁移。
+  const appliedStyleTheme = resolveStyleTheme(normalizedTheme, styleTheme);
+  for (const className of STYLE_THEME_CLASS_NAMES) {
+    document.documentElement.classList.toggle(className, `style-${appliedStyleTheme}` === className);
+  }
   syncBrowserThemeSurface(resolved);
 }
 
@@ -122,35 +168,49 @@ export function isTheme(value: string | null | undefined): value is Theme {
     value === "zai-dark" ||
     value === "claude-light" ||
     value === "claude-dark" ||
+    value === "codex-light" ||
+    value === "codex-dark" ||
     value === "system"
   );
 }
 
+function readThemePreference(): Theme {
+  const saved = typeof localStorage === "undefined" ? null : localStorage.getItem(THEME_STORAGE_KEY);
+  // 默认主题统一收敛到 Zai dark，避免旧 hook 兜底值和 Zustand store 默认值分叉。
+  return isTheme(saved) ? normalizeThemePreference(saved) : "zai-dark";
+}
+
 export function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    // 默认主题统一收敛到 Zai dark，避免旧 hook 兜底值和 Zustand store 默认值分叉。
-    return isTheme(saved) ? normalizeThemePreference(saved) : "zai-dark";
-  });
+  const [theme, setThemeState] = useState<Theme>(readThemePreference);
+  const [styleTheme, setStyleThemeState] = useState<StyleTheme>(() =>
+    readStyleThemePreference(readThemePreference()),
+  );
 
   const setTheme = useCallback((t: Theme) => {
     const normalizedTheme = normalizeThemePreference(t);
-    localStorage.setItem(STORAGE_KEY, normalizedTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, normalizedTheme);
     setThemeState(normalizedTheme);
-    applyTheme(normalizedTheme);
+    applyTheme(normalizedTheme, readStyleThemePreference(normalizedTheme));
   }, []);
 
-  // 初始化 + system 模式下监听系统偏好变化
+  const setStyleTheme = useCallback((nextStyleTheme: StyleTheme) => {
+    localStorage.setItem(STYLE_THEME_STORAGE_KEY, nextStyleTheme);
+    setStyleThemeState(nextStyleTheme);
+    // 从存储读取当前配色，避免闭包中的 theme 在连续调用时变成旧值。
+    applyTheme(readThemePreference(), nextStyleTheme);
+  }, []);
+
+  // 初始化 + system 模式下监听系统偏好变化；配色与 UI 方案任一变化都重新应用。
   useEffect(() => {
-    applyTheme(theme);
+    applyTheme(theme, styleTheme);
 
     if (theme !== "system") return;
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const handler = () => applyTheme("system");
+    const handler = () => applyTheme("system", styleTheme);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
-  }, [theme]);
+  }, [theme, styleTheme]);
 
-  return { theme, setTheme } as const;
+  return { theme, setTheme, styleTheme, setStyleTheme } as const;
 }

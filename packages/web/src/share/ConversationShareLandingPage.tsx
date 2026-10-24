@@ -13,7 +13,13 @@ import { BIGMODEL_PROVIDER_ID, ZAI_PROVIDER_ID } from "@zcode/shared";
 import type { ConversationSharePreview } from "@zcode/shared";
 import { ConversationShareReadonlyTimeline } from "@zcode/ui/conversation-share-readonly";
 import { renderOAuthProviderIcon } from "@zcode/ui/oauth-provider-icon";
-import { applyTheme, resolveTheme, type Theme } from "@zcode/ui/useTheme";
+import {
+  applyTheme,
+  readStyleThemePreference,
+  resolveTheme,
+  toggleThemeMode,
+  type Theme,
+} from "@zcode/ui/useTheme";
 import "./conversationShareLandingPage.css";
 import type { WebOAuthProviderId } from "../auth/browserOAuthCredentialRepo.js";
 import {
@@ -236,7 +242,8 @@ function ShareThemeToggle({
   onThemeChange?: (theme: Theme) => void;
 }) {
   const resolvedTheme = resolveTheme(theme);
-  const nextTheme = resolvedTheme === "dark" ? "zai-light" : "zai-dark";
+  // 只翻转明暗，分享页同样保留当前配色家族与 UI 方案。
+  const nextTheme = toggleThemeMode(theme);
   const label = resolvedTheme === "dark" ? copy.switchToLightTheme : copy.switchToDarkTheme;
   const Icon = resolvedTheme === "dark" ? SunIcon : MoonIcon;
 
@@ -776,12 +783,13 @@ export function ConversationShareLandingLoader({
   const handleThemeChange = useCallback((nextTheme: Theme) => {
     localStorage.setItem("zcode-theme", nextTheme);
     setActiveTheme(nextTheme);
-    applyTheme(nextTheme);
+    applyTheme(nextTheme, readStyleThemePreference(nextTheme));
   }, []);
   useEffect(() => {
     if (activeTheme !== "system") return;
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleSystemThemeChange = () => applyTheme("system");
+    const handleSystemThemeChange = () =>
+      applyTheme("system", readStyleThemePreference("system"));
     mediaQuery.addEventListener("change", handleSystemThemeChange);
     return () => mediaQuery.removeEventListener("change", handleSystemThemeChange);
   }, [activeTheme]);

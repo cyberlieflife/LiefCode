@@ -6,6 +6,8 @@
  */
 export const STATE_BROADCAST_FIELDS = [
   "theme",
+  // UI 方案与配色方案独立存储，跨窗口同步时也要分开广播。
+  "styleTheme",
   "locale",
   "uiFontSizePx",
   "uiFontFamilyLatin",

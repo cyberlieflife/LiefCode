@@ -22,10 +22,12 @@ import {
   HardDrive,
   Keyboard,
   FileSearch,
+  Code2,
 } from "lucide-react";
 import { isSettingsSectionEnabled, type SettingsSectionId } from "@/lib/settingsNavigation.js";
-import type { Theme } from "@/useTheme.js";
+import type { StyleTheme, Theme } from "@/useTheme.js";
 
+/** 配色方案：决定颜色 token；System 按系统明暗套用 Zai 家族。 */
 export const THEME_MODES: Array<{
   mode: Theme;
   icon: typeof Sun;
@@ -33,9 +35,20 @@ export const THEME_MODES: Array<{
   { mode: "system", icon: Monitor },
   { mode: "zai-dark", icon: Moon },
   { mode: "zai-light", icon: Sun },
-  // Claude 主题同时携带配色与样式（圆角刻度、极淡阴影、衬线标题）。
   { mode: "claude-dark", icon: MoonStar },
   { mode: "claude-light", icon: SunMedium },
+  { mode: "codex-dark", icon: Code2 },
+  { mode: "codex-light", icon: Code2 },
+];
+
+/** UI 方案：只决定圆角、阴影与标题排版，与配色方案独立组合。 */
+export const STYLE_THEMES: Array<{
+  style: StyleTheme;
+  icon: typeof Sun;
+}> = [
+  { style: "default", icon: Palette },
+  { style: "claude", icon: SunMedium },
+  { style: "codex", icon: Code2 },
 ];
 
 export type SettingsSectionGroupId = "basics" | "agentCapabilities" | "dataAndStats";

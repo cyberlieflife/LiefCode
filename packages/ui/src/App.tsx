@@ -51,7 +51,7 @@ import {
 import { runWorkspaceVisibleCommand } from "@/lib/workspaceVisibleCommand.js";
 import { ZCODE_PRODUCT_DOCS_URL } from "@/lib/productDocs.js";
 import appLogoUrl from "@/assets/provider-icons/logo-zai.svg";
-import { resolveTheme } from "@/useTheme.js";
+import { resolveTheme, toggleThemeMode } from "@/useTheme.js";
 import { WorkspaceShellLayout } from "@/app-shell/WorkspaceShellLayout.js";
 import { useAppChromeState } from "@/app-shell/useAppChromeState.js";
 import { useWorkspaceSessionReload } from "@/app-shell/useWorkspaceSessionReload.js";
@@ -371,6 +371,7 @@ export function App({
   });
   const theme = useZCodeStore((s) => s.theme);
   const setTheme = useZCodeStore((s) => s.setTheme);
+  const styleTheme = useZCodeStore((s) => s.styleTheme);
   const {
     isMacFullscreen,
     desktopWindowChromeState,
@@ -718,8 +719,9 @@ export function App({
   }, [platform]);
   const themeTarget = resolveTheme(theme) === "dark" ? "light" : "dark";
   const handleSwitchTheme = useCallback(() => {
-    setTheme(themeTarget);
-  }, [setTheme, themeTarget]);
+    // 只翻转明暗，保留 Zai/Claude/Codex 配色家族与当前 UI 方案。
+    setTheme(toggleThemeMode(theme));
+  }, [setTheme, theme]);
   const handleOpenSettingsSection = useCallback(
     (section: SettingsSectionId) => {
       setPendingSettingsSection(section);
@@ -1221,6 +1223,7 @@ export function App({
           isWindowsDesktop={isWindowsDesktop}
           workspaceShellZCodeState={workspaceShellZCodeState}
           theme={theme}
+          styleTheme={styleTheme}
           isMacFullscreen={isMacFullscreen}
           desktopWindowChromeState={desktopWindowChromeState}
           macWindowControlsLeftPaddingPx={macWindowControlsLeftPaddingPx}

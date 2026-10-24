@@ -204,6 +204,8 @@ const themeSelectors = {
   defaultDark: ".dark",
   zaiLight: ".theme-zai-light",
   zaiDark: ".theme-zai-dark",
+  codexLight: ".theme-codex-light",
+  codexDark: ".theme-codex-dark",
 } as const;
 const parentBackgrounds = [
   "background",
@@ -216,7 +218,7 @@ const parentBackgrounds = [
 const semantics = ["warning", "destructive", "success", "progress"] as const;
 
 describe("remote UI semantic surface tokens", () => {
-  it("keeps all 96 theme/background/semantic combinations readable with real token values", () => {
+  it("keeps all theme/background/semantic combinations readable with real token values", () => {
     const combinations: string[] = [];
     const violations: string[] = [];
     for (const [theme, selector] of Object.entries(themeSelectors)) {
@@ -245,12 +247,12 @@ describe("remote UI semantic surface tokens", () => {
         }
       }
     }
-    expect(combinations).toHaveLength(96);
+    expect(combinations).toHaveLength(144);
     // 阈值 4.5:1 是 §8.3 合同的硬门禁；失败即 token 取值的规格缺陷，修 token 并回写文档。
     expect(violations).toEqual([]);
   });
 
-  it("远程标签、侧栏和设置导航在四个主题中达到 4.5:1", () => {
+  it("远程标签、侧栏和设置导航在所有配色主题中达到 4.5:1", () => {
     const violations: string[] = [];
     for (const [theme, selector] of Object.entries(themeSelectors)) {
       const scopes: Scope = [

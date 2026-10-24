@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu.js";
 import {
   Copy,
+  LayoutTemplate,
   PencilRuler,
   Globe,
   Gift,
@@ -48,7 +49,7 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useShortcutCommandLabel } from "@/shortcuts/useShortcutBindings.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { normalizeInterfaceMode } from "@/lib/interfaceMode.js";
-import type { Theme } from "@/useTheme.js";
+import type { StyleTheme, Theme } from "@/useTheme.js";
 import { WorkspaceWebRemoteControlTrigger } from "@/WorkspaceWebRemoteControlTrigger.js";
 import {
   WorkspaceSidebarFooterPlanBadge,
@@ -91,9 +92,11 @@ function getAvatarFallbackText(user: UserInfo | null | undefined): string {
 
 export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterComponent({
   theme,
+  styleTheme,
   localeMenuValue,
   onLocaleChange,
   onThemeChange,
+  onStyleThemeChange,
   onSettingsButtonClick,
   onUsageClick,
   onUpgradeClick,
@@ -110,9 +113,11 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
   className,
 }: {
   theme: Theme;
+  styleTheme: StyleTheme;
   localeMenuValue: Locale | "system";
   onLocaleChange: (value: string) => void;
   onThemeChange: (value: string) => void;
+  onStyleThemeChange: (value: StyleTheme) => void;
   onSettingsButtonClick?: () => void;
   onUsageClick?: () => void;
   onUpgradeClick?: Parameters<
@@ -348,7 +353,7 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <Palette className="size-4" />
-                {intl.formatMessage({ id: "settings.themeMode" })}
+                {intl.formatMessage({ id: "settings.colorScheme" })}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-48">
                 <DropdownMenuRadioGroup value={theme} onValueChange={onThemeChange}>
@@ -376,6 +381,38 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
                     {intl.formatMessage({
                       id: "sidebar.settings.theme.claude-light",
                     })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="codex-dark">
+                    {intl.formatMessage({
+                      id: "sidebar.settings.theme.codex-dark",
+                    })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="codex-light">
+                    {intl.formatMessage({
+                      id: "sidebar.settings.theme.codex-light",
+                    })}
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <LayoutTemplate className="size-4" />
+                {intl.formatMessage({ id: "settings.uiScheme" })}
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent className="w-48">
+                <DropdownMenuRadioGroup
+                  value={styleTheme}
+                  onValueChange={(value) => onStyleThemeChange(value as StyleTheme)}
+                >
+                  <DropdownMenuRadioItem value="default">
+                    {intl.formatMessage({ id: "settings.uiScheme.default" })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="claude">
+                    {intl.formatMessage({ id: "settings.uiScheme.claude" })}
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="codex">
+                    {intl.formatMessage({ id: "settings.uiScheme.codex" })}
                   </DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>

@@ -62,6 +62,7 @@ vi.mock("@zcode/ui", () => ({
   applyTheme: vi.fn(),
   isTheme: vi.fn(() => false),
   normalizeThemePreference: (value: string) => value,
+  readStyleThemePreference: () => "default",
   installDocumentHiddenMotionPause: vi.fn(),
   playTaskNotificationSound: vi.fn(),
   setStreamClientId: vi.fn(),

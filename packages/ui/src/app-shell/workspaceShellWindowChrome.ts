@@ -18,6 +18,8 @@ type WorkspaceShellPlatformRadiusOptions = Pick<
 
 /** Claude 样式下渲染进程自绘的窗口外形圆角，对应 DESIGN.md 的 xl 档。 */
 const CLAUDE_PANEL_RADIUS_PX = 16;
+/** Codex 样式把 xl 档收紧到 10px，窗口外形与面板保持同一刻度。 */
+const CODEX_PANEL_RADIUS_PX = 10;
 
 export function resolveWorkspaceShellPanelRadiusPx({
   isMacDesktop,
@@ -29,6 +31,7 @@ export function resolveWorkspaceShellPanelRadiusPx({
   // 否则 4px 留白不再是同心圆。Windows/Linux 的窗口外形由渲染进程自绘，可以跟随。
   if (isMacDesktop) return (macOSMajorVersion ?? 0) >= 26 ? 12 : 6;
   if (styleTheme === "claude") return CLAUDE_PANEL_RADIUS_PX;
+  if (styleTheme === "codex") return CODEX_PANEL_RADIUS_PX;
   if (isWindowsDesktop) return 6;
   return 12;
 }
@@ -50,11 +53,11 @@ export function resolveWorkspaceShellWindowChromeClass({
   // Linux 面板圆角走 rounded-xl；Claude 样式下该档正好等于窗口外形圆角。
   if (isLinuxDesktop) return "rounded-xl border border-border";
 
-  if (isWindowsDesktop && styleTheme === "claude") {
-    // Claude 样式的窗口外形由渲染进程自绘，四角都按 DESIGN.md 的 xl 档收圆。
-    // 这条分支不区分原生圆角能力：Claude 主题要的是一致的外形，Windows 10 也照样绘制。
+  if (isWindowsDesktop && (styleTheme === "claude" || styleTheme === "codex")) {
+    // Claude / Codex 样式的窗口外形由渲染进程自绘，四角都按各自 xl 档收圆。
+    // 这条分支不区分原生圆角能力：样式主题要的是一致的外形，Windows 10 也照样绘制。
     // 必须用字面量类名：Tailwind 只生成源码里出现过的类，拼接出来的类名不会进产物。
-    // Claude 样式下 rounded-xl 即为 CLAUDE_PANEL_RADIUS_PX。
+    // rounded-xl 在该样式下分别为 16px / 10px。
     return "rounded-xl border border-border";
   }
 

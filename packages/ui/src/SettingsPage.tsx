@@ -100,7 +100,7 @@ import {
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
-import { isTheme } from "@/useTheme.js";
+import { isStyleTheme, isTheme, type StyleTheme } from "@/useTheme.js";
 import { WindowsTopLeftLogo } from "@/WindowsTopLeftLogo.js";
 
 import { DesktopWindowControls } from "@/DesktopWindowControls.js";
@@ -422,6 +422,8 @@ export function SettingsPage({
   const setInterfaceMode = useZCodeStore((state) => state.setInterfaceMode);
   const theme = useZCodeStore((state) => state.theme);
   const setTheme = useZCodeStore((state) => state.setTheme);
+  const styleTheme = useZCodeStore((state) => state.styleTheme);
+  const setStyleTheme = useZCodeStore((state) => state.setStyleTheme);
   const codePreviewSettings = useZCodeStore((state) => state.codePreviewSettings);
   const setCodePreviewSettings = useZCodeStore((state) => state.setCodePreviewSettings);
   const uiFontSizePx = useZCodeStore((state) => state.uiFontSizePx);
@@ -1448,7 +1450,7 @@ export function SettingsPage({
   );
   const handleFooterThemeChange = useCallback(
     (value: string) => {
-      // 主题取值集合只在 useTheme 维护一份，避免新增主题时这里的白名单漏更新。
+      // 配色取值集合只在 useTheme 维护一份，避免新增配色时这里的白名单漏更新。
       if (isTheme(value)) {
         runUserAction({
           input: { featureId: "settings.appearance", action: "change_theme", trigger: "select" },
@@ -1459,6 +1461,22 @@ export function SettingsPage({
       }
     },
     [setTheme],
+  );
+  const handleStyleThemeChange = useCallback(
+    (value: StyleTheme) => {
+      if (!isStyleTheme(value)) return;
+      runUserAction({
+        input: {
+          featureId: "settings.appearance",
+          action: "change_style_theme",
+          trigger: "select",
+        },
+        operation: () => setStyleTheme(value),
+        completed: { resultSource: "local_commit", valueAfter: value },
+        failureStage: "local_commit",
+      });
+    },
+    [setStyleTheme],
   );
   const handleCodePreviewSettingsChange = useCallback(
     (patch: Parameters<typeof setCodePreviewSettings>[0]) => {
@@ -1763,9 +1781,11 @@ export function SettingsPage({
               <div className="max-lg:hidden">
                 <WorkspaceSidebarFooter
                   theme={theme}
+                  styleTheme={styleTheme}
                   localeMenuValue={localePreference}
                   onLocaleChange={handleFooterLocaleChange}
                   onThemeChange={handleFooterThemeChange}
+                  onStyleThemeChange={handleStyleThemeChange}
                   onSettingsButtonClick={onBack}
                   onUsageClick={handleOpenUsageSettings}
                   onUpgradeClick={handleOpenCodingPlanUpgradeSettings}
@@ -2144,6 +2164,8 @@ export function SettingsPage({
                               setCodePreviewSettings={handleCodePreviewSettingsChange}
                               theme={theme}
                               setTheme={(nextTheme) => handleFooterThemeChange(nextTheme)}
+                              styleTheme={styleTheme}
+                              setStyleTheme={handleStyleThemeChange}
                               uiFontSizePx={uiFontSizePx}
                               setUiFontSizePx={(fontSizePx) =>
                                 runUserAction({

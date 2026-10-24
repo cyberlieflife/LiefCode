@@ -3,6 +3,7 @@ import type { ZCodeTaskRuntimeStatus } from "@zcode/shared";
 type ChatPlaceholderMessageKey =
   | "chat.placeholder.newTask"
   | "chat.placeholder.newTaskMobile"
+  | "chat.placeholder.codexNewTask"
   | "chat.placeholder.followUpAsk"
   | "chat.placeholder.followUpQueue";
 
@@ -10,14 +11,18 @@ export function resolveChatPlaceholderKey(options: {
   hasHistoryMessages: boolean;
   isTaskProcessing: boolean;
   compactNewTask?: boolean;
+  /** Codex 方案的空输入框只用一句短提示，不复述 @ 与 / 的用法。 */
+  codexStyle?: boolean;
 }): ChatPlaceholderMessageKey {
-  const { compactNewTask = false, hasHistoryMessages, isTaskProcessing } = options;
+  const { codexStyle = false, compactNewTask = false, hasHistoryMessages, isTaskProcessing } =
+    options;
 
   // 按语义分流：
   // 1) 无历史 -> newTask
   // 2) 有历史且空闲 -> followUpAsk
   // 3) 有历史且处理中 -> followUpQueue
   if (!hasHistoryMessages) {
+    if (codexStyle) return "chat.placeholder.codexNewTask";
     return compactNewTask ? "chat.placeholder.newTaskMobile" : "chat.placeholder.newTask";
   }
 

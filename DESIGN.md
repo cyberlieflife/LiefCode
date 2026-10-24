@@ -58,35 +58,42 @@ macOS keeps native traffic lights; ordinary Web and mobile Web hide desktop cont
 Verify all three surfaces in both themes, including narrow windows, maximize/restore,
 minimize, and close-page versus close-window behavior.
 
-User-facing theme choices are:
+Appearance is split into two independent user-facing controls:
 
-- System
-- Light Theme, backed by Zai Light
-- Dark Theme, backed by Zai Dark
-- Claude Light, backed by Claude Light color theme plus the Claude style theme
-- Claude Dark, backed by Claude Dark color theme plus the Claude style theme
+- **Color scheme**: System, Zai Light, Zai Dark, Claude Light, Claude Dark, Codex Light, Codex Dark.
+- **UI scheme**: Default, Claude, Codex.
 
-Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
+The default appearance is Zai Dark with the Default UI scheme. Any color scheme can be combined with any UI scheme.
 
-### Color theme and style theme
+### Color schemes
 
-Theme selection is one control, but it drives two independent CSS layers:
+Each color scheme defines the full semantic token set (142 tokens) in [styles.css](packages/ui/src/styles.css):
 
-- **Color theme**: `.theme-zai-light`, `.theme-zai-dark`, `.theme-claude-light`, `.theme-claude-dark`. Each defines the full semantic token set (142 tokens). Selecting a theme toggles exactly one color class.
-- **Style theme**: `.style-claude`. It changes geometry, elevation, and typography only, and is applied only when a Claude color theme is selected.
+- **Zai**: `.theme-zai-light`, `.theme-zai-dark`.
+- **Claude**: `.theme-claude-light`, `.theme-claude-dark`.
+- **Codex**: `.theme-codex-light`, `.theme-codex-dark`.
 
-The two layers are separable in CSS so a future style theme can be combined with any palette, but the UI exposes one selector: choosing a Claude theme applies both layers together.
+Selecting a color scheme toggles exactly one `theme-<scheme>-<mode>` class. `System` resolves to the Zai palette at the system light/dark preference, preserving the historical behavior. Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
 
 The Claude palette follows Anthropic's published design tokens (cream canvas, coral accent, warm ink). Some official marketing colors fall below readable contrast on the cream canvas (2.0-2.5:1), so semantic colors used as text or fills are darkened along the same hue. The coral primary fill keeps the official `#cc785c` value; its white foreground matches the contrast already shipped by the existing dark destructive button.
 
-The Claude style theme:
+The Codex palette follows the Codex desktop app's neutral treatment: greyscale surfaces, hairline borders, a white-on-black primary button in dark mode and black-on-white in light mode, with Codex blue reserved for links, focus, and active indicators. Values are derived from official Codex product imagery (`#212121` canvas, `#242424` panel, `#303030` raised surface) plus the `#5FAFFF` accent published in the open-source Codex CLI. They are not an official token export.
 
-- Replaces the radius scale with the Claude `rounded` scale: `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px. `2xl` becomes 20px instead of Claude's 16px ceiling, so dialog shells keep a visible step above the `xl` content they contain.
-- Sets `--window-shell-radius` to 20px, keeping it exactly one 4px inset above the 16px panel radius so the renderer-drawn window outline stays concentric. macOS panel radius still follows the native window corner, because that radius exists to stay concentric with the system-drawn corner.
-- Flattens the elevation scale to Claude's near-shadowless treatment while preserving ring and inset shadow composition.
-- Switches Markdown headings to a serif display stack.
+### UI schemes
 
-Style themes must not change information density, spacing rhythm, or component layout. Any style-theme rule that needs per-component geometry changes should instead override a shared token.
+A UI scheme changes geometry, elevation, and typography only. It is independent from the color scheme and is stored separately:
+
+- **Default**: the existing radius scale and shadows.
+- **Claude**: the Claude `rounded` scale with `xs` 4px, `sm` 6px, `md` 8px, `lg` 12px, `xl` 16px; `2xl` becomes 20px instead of Claude's 16px ceiling, so dialog shells keep a visible step above the `xl` content they contain. Sets `--window-shell-radius` to 20px, keeping it exactly one 4px inset above the 16px panel radius so the renderer-drawn window outline stays concentric. macOS panel radius still follows the native window corner. Flattens elevation to Claude's near-shadowless treatment and switches Markdown headings to a serif display stack.
+- **Codex**: the compact radius scale with `xs` 3px, `sm` 5px, `md` 8px, `lg` 10px, `xl` 14px, `2xl` 18px. Sets `--window-shell-radius` to 12px. Collapses shadows to a hairline, keeps Markdown headings sans-serif, and applies `-0.01em` tracking to heading text.
+
+Rules:
+
+- Each UI scheme is a single `style-<name>` class on `<html>`; exactly one is active.
+- Legacy preferences migrate explicitly: a stored Claude color scheme without a stored UI scheme keeps the Claude UI scheme; every other legacy value starts on Default.
+- Default and Claude must not change information density, spacing rhythm, or component layout. Any rule that needs per-component geometry changes should instead override a shared token.
+- Codex is the structural exception: the target product is defined by its two-column sidebar, project-name welcome title, and stacked composer. Those structural rules live under `.style-codex` and must preserve every existing command and keyboard path.
+- UI schemes compose with card styles. Card styles continue to own surface material only.
 
 ## Card Styles
 

@@ -1196,6 +1196,339 @@ html[data-document-hidden] *::after {
 }
 
 /*
+ * Codex 配色：中性灰阶画布 + 细边框 + 黑白主按钮，蓝色只用于链接和焦点。
+ * 灰阶取自官方 Codex 桌面产品图（#212121 / #242424 / #303030），
+ * 强调色取自开源 Codex CLI 的 CHATGPT_BLUE_200。
+ */
+.theme-codex-dark {
+  --animated-gradient-text-strong: rgba(205, 214, 244, 1);
+  --animated-gradient-text-soft: rgba(205, 214, 244, 0.22);
+  --color-background: #1e1e2e;
+  --color-background-win-alt: #181825;
+  --color-background-alt: color-mix(in oklab, var(--color-background-win-alt) 60%, transparent);
+  --color-brand: #89b4fa;
+  --color-trajectory-user: #89b4fa;
+  --color-trajectory-assistant: #a6e3a1;
+  --color-trajectory-reasoning: #cba6f7;
+  --color-trajectory-tool-call: #f9e2af;
+  --color-trajectory-tool-result: #74c7ec;
+  --color-workflow-rule: rgba(205, 214, 244, 0.07);
+  --color-workflow-trace: rgba(205, 214, 244, 0.32);
+  --color-workflow-trace-strong: rgba(205, 214, 244, 0.58);
+  --color-accent: #313244;
+  --color-find-highlight: #45475a;
+  --color-find-highlight-active: #f9e2af;
+  --color-border: #313244;
+  --color-border-hover: #45475a;
+  --color-hover: rgba(205, 214, 244, 0.06);
+  --color-selected: #343647;
+  --color-header: #1e1e2e;
+  --color-panel: #1e1e2e;
+  --color-sidebar: #181825;
+  --color-surface: #2a2b3c;
+  --color-surface-hover: #343647;
+  --color-card: #2a2b3c;
+  --color-card-selected: #313244;
+  --color-card-border: #313244;
+  --color-popover: #2e2f42;
+  --color-popover-foreground: var(--color-foreground);
+  --color-popover-header: #1e1e2e;
+  --color-popover-border: #313244;
+  --color-input: #2e2f42;
+  --color-input-focused: var(--color-input);
+  --color-input-border: #313244;
+  --color-input-border-hover: #45475a;
+  --color-input-border-focused: #45475a;
+  --color-terminal-bg: #181825;
+  --color-terminal-fg: #cdd6f4;
+  --color-terminal-cursor: #cdd6f4;
+  --color-terminal-cursor-accent: #181825;
+  --color-terminal-selection: rgba(137, 180, 250, 0.28);
+  --color-terminal-selection-inactive: rgba(205, 214, 244, 0.1);
+  --color-terminal-black: #45475a;
+  --color-terminal-red: #f38ba8;
+  --color-terminal-green: #a6e3a1;
+  --color-terminal-yellow: #f9e2af;
+  --color-terminal-blue: #89b4fa;
+  --color-terminal-magenta: #f5c2e7;
+  --color-terminal-cyan: #94e2d5;
+  --color-terminal-white: #bac2de;
+  --color-terminal-bright-black: #585b70;
+  --color-terminal-bright-red: #eba0ac;
+  --color-terminal-bright-green: #b9f2b4;
+  --color-terminal-bright-yellow: #f9e2af;
+  --color-terminal-bright-blue: #b4befe;
+  --color-terminal-bright-magenta: #f5c2e7;
+  --color-terminal-bright-cyan: #89dceb;
+  --color-terminal-bright-white: #a6adc8;
+  --color-usage-chart-1: #89b4fa;
+  --color-usage-chart-2: #a6e3a1;
+  --color-usage-chart-3: #cba6f7;
+  --color-usage-chart-4: #f38ba8;
+  --color-usage-chart-5: #f9e2af;
+  --color-usage-chart-6: #94e2d5;
+  --color-context-breakdown-1: #89b4fa;
+  --color-context-breakdown-2: #9fbcf7;
+  --color-context-breakdown-3: #b4c4f3;
+  --color-context-breakdown-4: #c5cdf0;
+  --color-context-breakdown-5: #d5d6ec;
+  --color-context-breakdown-6: #e2e0ec;
+  --color-context-breakdown-7: #eeebef;
+  --color-usage-heatmap-0: color-mix(in oklab, #89b4fa 0%, var(--color-surface));
+  --color-usage-heatmap-1: color-mix(in oklab, #89b4fa 24%, var(--color-surface));
+  --color-usage-heatmap-2: color-mix(in oklab, #89b4fa 42%, var(--color-surface));
+  --color-usage-heatmap-3: color-mix(in oklab, #89b4fa 62%, var(--color-surface));
+  --color-usage-heatmap-4: color-mix(in oklab, #b4befe 78%, var(--color-surface));
+  --color-tab: #1e1e2e;
+  --color-tab-active: #313244;
+  --color-tab-border: #313244;
+  --color-menu: #2e2f42;
+  --color-menu-hover: #313244;
+  --color-primary: #89b4fa;
+  --color-primary-foreground: #1e1e2e;
+  --color-secondary: #313244;
+  --color-interaction-ask-surface: #313244;
+  --color-interaction-ask-foreground: #89b4fa;
+  --color-interaction-ask-fill: rgba(166, 227, 161, 0.24);
+  --color-interaction-confirmation-surface: rgba(166, 227, 161, 0.16);
+  --color-interaction-confirmation-foreground: #b9f2b4;
+  --color-success-surface: rgba(166, 227, 161, 0.16);
+  --color-success-surface-foreground: #b9f2b4;
+  --color-progress-surface: rgba(137, 180, 250, 0.16);
+  --color-progress-surface-foreground: #a8c4fb;
+  --color-foreground: #cdd6f4;
+  --color-foreground-subtle: #a6adc8;
+  --color-remote-foreground-muted: #bac2de;
+  --color-foreground-subtlest: #7f849c;
+  --lucide-subtlest-opacity: 0.3;
+  --color-foreground-inverse: #1e1e2e;
+  --color-success: #a6e3a1;
+  --color-success-foreground: #1e1e2e;
+  --color-idle-task: #cba6f7;
+  --color-idle-task-surface: #2a2140;
+  --color-destructive: #f38ba8;
+  --color-destructive-foreground: #1e1e2e;
+  --color-warning: #f9e2af;
+  --color-feedback-privacy-hint: #f9e2af;
+  --color-warning-foreground: #1e1e2e;
+  --color-warning-surface: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  --color-warning-surface-foreground: #f9e2af;
+  --color-destructive-surface: color-mix(in srgb, var(--color-destructive) 16%, transparent);
+  --color-destructive-surface-foreground: #f5b8c8;
+  --color-diff-added: #a6e3a1;
+  --color-diff-added-foreground: #1e1e2e;
+  --color-diff-removed: #f38ba8;
+  --color-diff-removed-foreground: #1e1e2e;
+  --color-git-none: var(--color-foreground);
+  --color-git-modified: #f9e2af;
+  --color-git-added: #a6e3a1;
+  --color-git-deleted: #f38ba8;
+  --color-git-renamed: #89b4fa;
+  --color-git-untracked: #a6e3a1;
+  --color-git-ignored: var(--color-foreground-subtlest);
+  --color-git-descendant: #f9e2af;
+  --color-toast: #24243a;
+  --color-tooltip: #24243a;
+  --color-tooltip-foreground: #cdd6f4;
+  --color-tooltip-tag: #313244;
+  --color-tooltip-tag-foreground: #a6adc8;
+  --color-tag: #313244;
+  --color-remote-ssh-surface: rgba(137, 180, 250, 0.16);
+  --color-remote-ssh-foreground: #a8c4fb;
+  --color-remote-ssh-border: rgba(137, 180, 250, 0.42);
+  --color-remote-wsl-surface: rgba(166, 227, 161, 0.16);
+  --color-remote-wsl-foreground: #b9f2b4;
+  --color-remote-wsl-border: rgba(166, 227, 161, 0.42);
+  --color-remote-docker-surface: rgba(203, 166, 247, 0.16);
+  --color-remote-docker-foreground: #dcc4f9;
+  --color-remote-docker-border: rgba(203, 166, 247, 0.42);
+  --color-file-node: rgba(137, 180, 250, 0.16);
+  --color-file-node-hover: rgba(137, 180, 250, 0.22);
+  --color-file-node-foreground: #a8c4fb;
+  --color-skill-node: rgba(203, 166, 247, 0.16);
+  --color-skill-node-hover: rgba(203, 166, 247, 0.22);
+  --color-skill-node-foreground: #dcc4f9;
+  --color-command-node: rgba(186, 194, 222, 0.14);
+  --color-command-node-hover: rgba(186, 194, 222, 0.2);
+  --color-command-node-foreground: #cdd6f4;
+  --color-subagent-node: rgba(183, 189, 117, 0.16);
+  --color-subagent-node-hover: rgba(183, 189, 117, 0.22);
+  --color-subagent-node-foreground: #d4d9a6;
+  --color-session-node: rgba(148, 226, 213, 0.16);
+  --color-session-node-hover: rgba(148, 226, 213, 0.22);
+  --color-session-node-foreground: #a9ede3;
+  --color-plugin-node: rgba(250, 179, 135, 0.16);
+  --color-plugin-node-hover: rgba(250, 179, 135, 0.22);
+  --color-plugin-node-foreground: #fbc4a4;
+  --color-plugin-paid-plan-badge: #3a2f2a;
+  --color-plugin-paid-plan-badge-foreground: #fbc4a4;
+}
+
+.theme-codex-light {
+  --animated-gradient-text-strong: rgba(76, 79, 105, 1);
+  --animated-gradient-text-soft: rgba(76, 79, 105, 0.22);
+  --color-background: #eff1f5;
+  --color-background-win-alt: #e6e9ef;
+  --color-background-alt: color-mix(in oklab, var(--color-background-win-alt) 60%, transparent);
+  --color-brand: #1e66f5;
+  --color-trajectory-user: #1e66f5;
+  --color-trajectory-assistant: #40a02b;
+  --color-trajectory-reasoning: #8839ef;
+  --color-trajectory-tool-call: #df8e1d;
+  --color-trajectory-tool-result: #179299;
+  --color-workflow-rule: rgba(76, 79, 105, 0.07);
+  --color-workflow-trace: rgba(76, 79, 105, 0.3);
+  --color-workflow-trace-strong: rgba(76, 79, 105, 0.55);
+  --color-accent: #dce0e8;
+  --color-find-highlight: #f5e0dc;
+  --color-find-highlight-active: #df8e1d;
+  --color-border: #ccd0da;
+  --color-border-hover: #bcc0cc;
+  --color-hover: rgba(76, 79, 105, 0.05);
+  --color-selected: #dce0e8;
+  --color-header: #eff1f5;
+  --color-panel: #eff1f5;
+  --color-sidebar: #e6e9ef;
+  --color-surface: #e6e9ef;
+  --color-surface-hover: #dce0e8;
+  --color-card: #ffffff;
+  --color-card-selected: #e6e9ef;
+  --color-card-border: #ccd0da;
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-foreground);
+  --color-popover-header: #eff1f5;
+  --color-popover-border: #ccd0da;
+  --color-input: #ffffff;
+  --color-input-focused: var(--color-input);
+  --color-input-border: #ccd0da;
+  --color-input-border-hover: #bcc0cc;
+  --color-input-border-focused: #bcc0cc;
+  --color-terminal-bg: #e6e9ef;
+  --color-terminal-fg: #4c4f69;
+  --color-terminal-cursor: #4c4f69;
+  --color-terminal-cursor-accent: #e6e9ef;
+  --color-terminal-selection: rgba(30, 102, 245, 0.22);
+  --color-terminal-selection-inactive: rgba(76, 79, 105, 0.1);
+  --color-terminal-black: #5c5f77;
+  --color-terminal-red: #d20f39;
+  --color-terminal-green: #40a02b;
+  --color-terminal-yellow: #df8e1d;
+  --color-terminal-blue: #1e66f5;
+  --color-terminal-magenta: #8839ef;
+  --color-terminal-cyan: #179299;
+  --color-terminal-white: #acb0be;
+  --color-terminal-bright-black: #6c6f85;
+  --color-terminal-bright-red: #e64553;
+  --color-terminal-bright-green: #40a02b;
+  --color-terminal-bright-yellow: #fe640b;
+  --color-terminal-bright-blue: #7287fd;
+  --color-terminal-bright-magenta: #ea76cb;
+  --color-terminal-bright-cyan: #179299;
+  --color-terminal-bright-white: #4c4f69;
+  --color-usage-chart-1: #1e66f5;
+  --color-usage-chart-2: #40a02b;
+  --color-usage-chart-3: #8839ef;
+  --color-usage-chart-4: #d20f39;
+  --color-usage-chart-5: #df8e1d;
+  --color-usage-chart-6: #179299;
+  --color-context-breakdown-1: #1e66f5;
+  --color-context-breakdown-2: #3b7bf6;
+  --color-context-breakdown-3: #5a90f8;
+  --color-context-breakdown-4: #79a5fa;
+  --color-context-breakdown-5: #98bafb;
+  --color-context-breakdown-6: #b8cffd;
+  --color-context-breakdown-7: #d7e4fe;
+  --color-usage-heatmap-0: color-mix(in oklab, #1e66f5 0%, var(--color-surface));
+  --color-usage-heatmap-1: color-mix(in oklab, #1e66f5 18%, var(--color-surface));
+  --color-usage-heatmap-2: color-mix(in oklab, #1e66f5 34%, var(--color-surface));
+  --color-usage-heatmap-3: color-mix(in oklab, #1e66f5 52%, var(--color-surface));
+  --color-usage-heatmap-4: color-mix(in oklab, #1e66f5 72%, var(--color-surface));
+  --color-tab: #eff1f5;
+  --color-tab-active: #e6e9ef;
+  --color-tab-border: #ccd0da;
+  --color-menu: #ffffff;
+  --color-menu-hover: #e6e9ef;
+  --color-primary: #1e66f5;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e6e9ef;
+  --color-interaction-ask-surface: #dce0e8;
+  --color-interaction-ask-foreground: #1e66f5;
+  --color-interaction-ask-fill: rgba(64, 160, 43, 0.2);
+  --color-interaction-confirmation-surface: rgba(64, 160, 43, 0.12);
+  --color-interaction-confirmation-foreground: #2f7d1f;
+  --color-success-surface: rgba(64, 160, 43, 0.12);
+  --color-success-surface-foreground: #1f6414;
+  --color-progress-surface: rgba(30, 102, 245, 0.12);
+  --color-progress-surface-foreground: #1450c7;
+  --color-foreground: #4c4f69;
+  --color-foreground-subtle: #6c6f85;
+  --color-remote-foreground-muted: #5c5f77;
+  --color-foreground-subtlest: #8c8fa1;
+  --lucide-subtlest-opacity: 0.4;
+  --color-foreground-inverse: #ffffff;
+  --color-success: #40a02b;
+  --color-success-foreground: #ffffff;
+  --color-idle-task: #8839ef;
+  --color-idle-task-surface: #f0e8fc;
+  --color-destructive: #d20f39;
+  --color-destructive-foreground: #ffffff;
+  --color-warning: #df8e1d;
+  --color-feedback-privacy-hint: #8a5a00;
+  --color-warning-foreground: #ffffff;
+  --color-warning-surface: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  --color-warning-surface-foreground: #6b4500;
+  --color-destructive-surface: color-mix(in srgb, var(--color-destructive) 12%, transparent);
+  --color-destructive-surface-foreground: #8f0a28;
+  --color-diff-added: #40a02b;
+  --color-diff-added-foreground: #ffffff;
+  --color-diff-removed: #d20f39;
+  --color-diff-removed-foreground: #ffffff;
+  --color-git-none: var(--color-foreground);
+  --color-git-modified: #8a5a00;
+  --color-git-added: #2f7d1f;
+  --color-git-deleted: #d20f39;
+  --color-git-renamed: #1e66f5;
+  --color-git-untracked: #2f7d1f;
+  --color-git-ignored: var(--color-foreground-subtlest);
+  --color-git-descendant: #8a5a00;
+  --color-toast: #ffffff;
+  --color-tooltip: #4c4f69;
+  --color-tooltip-foreground: #eff1f5;
+  --color-tooltip-tag: #5c5f77;
+  --color-tooltip-tag-foreground: #ccd0da;
+  --color-tag: #e6e9ef;
+  --color-remote-ssh-surface: rgba(30, 102, 245, 0.1);
+  --color-remote-ssh-foreground: #1450c7;
+  --color-remote-ssh-border: rgba(30, 102, 245, 0.34);
+  --color-remote-wsl-surface: rgba(64, 160, 43, 0.1);
+  --color-remote-wsl-foreground: #1f6414;
+  --color-remote-wsl-border: rgba(64, 160, 43, 0.34);
+  --color-remote-docker-surface: rgba(136, 57, 239, 0.1);
+  --color-remote-docker-foreground: #6f2bc4;
+  --color-remote-docker-border: rgba(136, 57, 239, 0.34);
+  --color-file-node: rgba(30, 102, 245, 0.1);
+  --color-file-node-hover: rgba(30, 102, 245, 0.16);
+  --color-file-node-foreground: #1a5bd6;
+  --color-skill-node: rgba(136, 57, 239, 0.1);
+  --color-skill-node-hover: rgba(136, 57, 239, 0.16);
+  --color-skill-node-foreground: #6f2bc4;
+  --color-command-node: rgba(108, 111, 133, 0.08);
+  --color-command-node-hover: rgba(108, 111, 133, 0.14);
+  --color-command-node-foreground: #545768;
+  --color-subagent-node: rgba(122, 130, 60, 0.1);
+  --color-subagent-node-hover: rgba(122, 130, 60, 0.16);
+  --color-subagent-node-foreground: #5f6626;
+  --color-session-node: rgba(23, 146, 153, 0.1);
+  --color-session-node-hover: rgba(23, 146, 153, 0.16);
+  --color-session-node-foreground: #12747a;
+  --color-plugin-node: rgba(223, 142, 29, 0.1);
+  --color-plugin-node-hover: rgba(223, 142, 29, 0.16);
+  --color-plugin-node-foreground: #8a5a00;
+  --color-plugin-paid-plan-badge: #fdf0e3;
+  --color-plugin-paid-plan-badge-foreground: #7a3f10;
+}
+
+/*
  * === Claude 样式主题层 ===
  * 只改几何、阴影与排版，不改信息密度和组件分布，因此不需要逐个组件改样式。
  * Tailwind v4 的 rounded-* 工具类编译结果是 border-radius: var(--radius-*)，
@@ -1258,6 +1591,186 @@ html[data-document-hidden] *::after {
   font-family: var(--claude-display-font);
   font-weight: 400;
   letter-spacing: -0.01em;
+}
+
+/*
+ * === Codex 样式主题层 ===
+ * 只改几何、阴影与排版，不改信息密度和组件分布。
+ * Codex 界面用更小的圆角和近零阴影，层次交给边框与表面色差。
+ */
+.style-codex {
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
+  --window-shell-radius: 12px;
+  --codex-shadow-rgb: 13 13 13;
+}
+
+.style-codex.dark {
+  --codex-shadow-rgb: 0 0 0;
+}
+
+.style-codex .shadow-2xs {
+  --tw-shadow: 0 0 0 1px var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.04));
+}
+
+.style-codex .shadow-xs {
+  --tw-shadow: 0 1px 1px 0 var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.05));
+}
+
+.style-codex .shadow-sm {
+  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.06));
+}
+
+.style-codex .shadow-md {
+  --tw-shadow: 0 1px 2px 0 var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.08));
+}
+
+.style-codex .shadow-lg {
+  --tw-shadow: 0 2px 4px -1px var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.09));
+}
+
+.style-codex .shadow-xl {
+  --tw-shadow: 0 3px 6px -2px var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.1));
+}
+
+.style-codex .shadow-2xl {
+  --tw-shadow: 0 4px 10px -3px var(--tw-shadow-color, rgb(var(--codex-shadow-rgb) / 0.12));
+}
+
+/* Codex 标题保持无衬线，只用轻微负字距收紧阅读面。 */
+.style-codex [data-streamdown^="heading-"] {
+  letter-spacing: -0.01em;
+}
+
+/* Codex 欢迎页只保留小标记，水印式品牌底图退场。 */
+.style-codex [data-v4-draft-empty-logo] {
+  display: none;
+}
+
+.style-codex [data-v4-draft-empty-mark] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Codex 主界面不展示快捷模板行，输入框是唯一入口。 */
+.style-codex [data-v4-draft-suggested-prompts] {
+  display: none;
+}
+
+.style-codex [data-v4-draft-greeting] {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* 侧栏导航对齐 Codex 的紧凑列表：32px 行高，收掉额外分组间距。 */
+.style-codex [data-testid="sidebar-primary-navigation"] {
+  gap: 2px;
+  padding: 8px 8px 10px;
+}
+
+.style-codex [data-testid="sidebar-primary-navigation"] button {
+  height: 32px;
+  border-radius: 10px;
+}
+
+/* 左侧图标栏已经承载自动化和插件市场，右侧列表只保留新聊天入口。 */
+.style-codex [data-testid="sidebar-primary-navigation"] [data-testid="automations-open"],
+.style-codex
+  [data-testid="sidebar-primary-navigation"]
+  [data-testid="plugin-store-sidebar-open"] {
+  display: none;
+}
+
+/* 左侧图标栏已承载主导航，顶部浮层不再叠一层 logo 与返回箭头。 */
+.style-codex [data-desktop-top-overlay-left] {
+  display: none;
+}
+
+/* 侧栏图标栏位于窗口拖拽区，必须显式退出拖拽命中，否则按钮点击会被窗口拖动吞掉。 */
+.style-codex [data-codex-sidebar-rail],
+.style-codex [data-codex-sidebar-rail] button {
+  -webkit-app-region: no-drag;
+}
+
+/* 标题只保留项目名本身；脱离与编辑按钮留在输入框的项目条里。 */
+.style-codex [data-v4-draft-project-title] [data-testid="composer-project-detach"],
+.style-codex [data-v4-draft-project-title] [data-testid="composer-edit-project"] {
+  display: none;
+}
+
+/* 标题里的项目名：继承标题字号，用虚线下划线表达可点击，隐藏图标与分支控件。 */
+.style-codex [data-v4-draft-project-title] [data-testid="composer-workspace-trigger"] {
+  height: auto;
+  max-width: min(42vw, 28rem);
+  padding: 0 2px;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.24em;
+}
+
+.style-codex [data-v4-draft-project-title] [data-testid="composer-workspace-trigger"]:hover {
+  background: transparent;
+}
+
+.style-codex [data-v4-draft-project-title] [data-testid="composer-workspace-trigger"] svg {
+  display: none;
+}
+
+.style-codex [data-v4-draft-project-title] [data-testid="composer-workspace-trigger"] span {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-codex [data-v4-draft-project-title] [data-v4-draft-git-branch] {
+  display: none;
+}
+
+/*
+ * Codex 输入区是上下两层卡片：
+ * 上层项目条更窄、更暗，下层输入卡更宽、更亮，两者轻微叠压形成层次。
+ * 合并成同一张卡会丢掉截图里的分层关系，所以外层只做定位，不画表面。
+ */
+.style-codex .chat-composer-input-surface {
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* 仅草稿态有 contextHeader（项目条）；会话态保持原输入卡结构。 */
+.style-codex
+  .chat-composer-input-surface
+  > div:has([data-testid="composer-workspace-trigger"]) {
+  position: relative;
+  z-index: 20;
+  width: calc(100% - 24px);
+  margin: 0 auto -2px;
+  padding: 8px 12px 9px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background-color: var(--color-surface);
+}
+
+.style-codex .chat-composer-input-surface [data-composer-layout],
+.style-codex .chat-composer-input-surface [data-composer-layout]:focus-within {
+  position: relative;
+  z-index: 1;
+  border-color: var(--color-border) !important;
+  background-color: var(--color-input) !important;
+  border-radius: 16px;
+  box-shadow: none;
 }
 
 /*

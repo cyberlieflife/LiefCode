@@ -139,7 +139,7 @@ describe("设置页 UI polish E2E", () => {
     ).toEqual({ right: "6px", bottom: "6px", top: 6 });
   });
 
-  it("UP-01: 头像菜单按 language、theme、zoom 顺序展示偏好入口", async function () {
+  it("UP-01: 头像菜单按 language、color scheme、UI scheme、zoom 顺序展示偏好入口", async function () {
     this.timeout(60000);
 
     await clickVisibleTestId(TID_LOGIN_TRIGGER, {
@@ -199,14 +199,16 @@ describe("设置页 UI polish E2E", () => {
     expect(radii.items.every((radius) => radius === "6px")).toBe(true);
 
     const languageIndex = menuSnapshot.findIndex((text) => /界面语言|Language/.test(text));
-    const themeIndex = menuSnapshot.findIndex((text) => /界面主题|App theme/.test(text));
+    const themeIndex = menuSnapshot.findIndex((text) => /配色方案|Color scheme/.test(text));
+    const uiSchemeIndex = menuSnapshot.findIndex((text) => /UI 方案|UI scheme/.test(text));
     const zoomIndex = menuSnapshot.findIndex((text) => /界面缩放|Interface zoom/.test(text));
 
-    if (languageIndex < 0 || themeIndex < 0 || zoomIndex < 0) {
+    if (languageIndex < 0 || themeIndex < 0 || uiSchemeIndex < 0 || zoomIndex < 0) {
       throw new Error(`头像菜单偏好入口不完整：${JSON.stringify(menuSnapshot)}`);
     }
     expect(themeIndex).toBeGreaterThan(languageIndex);
-    expect(zoomIndex).toBeGreaterThan(themeIndex);
+    expect(uiSchemeIndex).toBeGreaterThan(themeIndex);
+    expect(zoomIndex).toBeGreaterThan(uiSchemeIndex);
     // 本例遗留的模态菜单会屏蔽下一例真实滚轮；DOM click 不受遮挡，曾掩盖该污染。
     await browser.keys("Escape");
     await browser.waitUntil(

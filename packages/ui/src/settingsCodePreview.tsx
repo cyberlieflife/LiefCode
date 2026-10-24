@@ -1,4 +1,4 @@
-import type { Theme } from "@/useTheme.js";
+import type { StyleTheme, Theme } from "@/useTheme.js";
 import { useState } from "react";
 import { resolveTheme } from "@/useTheme.js";
 import { Card, CardContent } from "@/components/ui/card.js";
@@ -20,7 +20,7 @@ import {
 import { getCodePreviewTheme } from "@/lib/codePreviewPreferences.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import type { CodePreviewSettings } from "@/store/index.js";
-import { THEME_MODES } from "@/settings/settingsPageConfig.js";
+import { STYLE_THEMES, THEME_MODES } from "@/settings/settingsPageConfig.js";
 import { MAX_UI_FONT_SIZE_PX, MIN_UI_FONT_SIZE_PX } from "@/lib/uiFontSize.js";
 import { UiFontFamilySetting } from "@/settings/UiFontFamilySetting.js";
 import type { UiFontFamilyCjk, UiFontFamilyLatin } from "@/lib/uiFontFamily.js";
@@ -87,6 +87,8 @@ export function AppearanceSectionContent({
   setCodePreviewSettings,
   theme,
   setTheme,
+  styleTheme,
+  setStyleTheme,
   uiFontSizePx,
   setUiFontSizePx,
   uiFontFamilyLatin,
@@ -100,6 +102,8 @@ export function AppearanceSectionContent({
   setCodePreviewSettings: (settings: Partial<CodePreviewSettings>) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  styleTheme: StyleTheme;
+  setStyleTheme: (styleTheme: StyleTheme) => void;
   uiFontSizePx: number;
   setUiFontSizePx: (fontSizePx: number) => void;
   uiFontFamilyLatin: UiFontFamilyLatin;
@@ -128,9 +132,9 @@ export function AppearanceSectionContent({
         <Card className="border border-border bg-card py-0 shadow-none">
           <CardContent className="space-y-0 px-0">
             <SettingsRow
-              label={intl.formatMessage({ id: "settings.themeMode" })}
+              label={intl.formatMessage({ id: "settings.colorScheme" })}
               description={intl.formatMessage({
-                id: "settings.themeModeDescription",
+                id: "settings.colorSchemeDescription",
               })}
               control={
                 <Select value={theme} onValueChange={(value) => setTheme(value as Theme)}>
@@ -144,6 +148,34 @@ export function AppearanceSectionContent({
                           <Icon className="size-4" />
                           {intl.formatMessage({
                             id: `settings.themeMode.${mode}`,
+                          })}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              }
+            />
+            <SettingsRow
+              label={intl.formatMessage({ id: "settings.uiScheme" })}
+              description={intl.formatMessage({
+                id: "settings.uiSchemeDescription",
+              })}
+              control={
+                <Select
+                  value={styleTheme}
+                  onValueChange={(value) => setStyleTheme(value as StyleTheme)}
+                >
+                  <SelectTrigger size="lg" className="w-[260px] min-w-0 justify-between">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STYLE_THEMES.map(({ style, icon: Icon }) => (
+                      <SelectItem key={style} value={style}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="size-4" />
+                          {intl.formatMessage({
+                            id: `settings.uiScheme.${style}`,
                           })}
                         </div>
                       </SelectItem>

@@ -6,6 +6,7 @@
  */
 import {
   type CSSProperties,
+  type ReactNode,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -13,6 +14,7 @@ import {
 } from "react";
 import darkEmptyStateLogoUrl from "@/assets/Z.svg";
 import { cn } from "@/components/lib/utils.js";
+import type { StyleTheme } from "@/useTheme.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { logger } from "@/logger.js";
@@ -96,12 +98,21 @@ export function resolveGreetingFontSizePx({
 export function ConversationDraftEmptyState({
   className,
   compactForRemoteControl = false,
+  styleTheme = "default",
+  projectMenu,
+  hasProject = false,
 }: {
   className?: string;
   compactForRemoteControl?: boolean;
+  styleTheme?: StyleTheme;
+  /** Codex 方案下标题里的项目选择器；点击即可切换项目。 */
+  projectMenu?: ReactNode;
+  /** 未选择项目时回落时间问候，避免出现“在选择项目中构建什么”的句子。 */
+  hasProject?: boolean;
 }) {
   const { intl } = useZCodeIntl();
   const isOfficeMode = useIsOfficeMode();
+  const showProjectTitle = styleTheme === "codex" && hasProject && projectMenu != null;
   const [greetingDate, setGreetingDate] = useState(() => new Date());
   const [greetingFontSizePx, setGreetingFontSizePx] = useState(
     GREETING_MAX_FONT_SIZE_PX,
@@ -127,6 +138,11 @@ export function ConversationDraftEmptyState({
   useLayoutEffect(() => {
     if (compactForRemoteControl) {
       setGreetingFontSizePx(GREETING_MIN_FONT_SIZE_PX);
+      return;
+    }
+    // Codex 标题包含可点击项目名，长度由项目名决定；保持固定字号并允许换行。
+    if (showProjectTitle) {
+      setGreetingFontSizePx(GREETING_MAX_FONT_SIZE_PX);
       return;
     }
     const container = greetingContainerRef.current;
@@ -195,7 +211,7 @@ export function ConversationDraftEmptyState({
       }
       observer.disconnect();
     };
-  }, [compactForRemoteControl, greeting]);
+  }, [compactForRemoteControl, greeting, showProjectTitle]);
 
   return (
     <div
@@ -206,12 +222,30 @@ export function ConversationDraftEmptyState({
     >
       <div
         aria-hidden="true"
+        data-v4-draft-empty-logo="true"
         className={cn(
           "pointer-events-none absolute left-1/2 top-1/2 aspect-[5/4] w-[min(72vw,25rem)] -mt-10",
           "-translate-x-1/2 -translate-y-1/2 text-foreground-subtlest",
         )}
       >
         <ZCodeEmptyStateLogo className="h-full w-full" />
+      </div>
+      {/* Codex 方案用空心 Lief 字标替代整幅水印；默认隐藏。 */}
+      <div
+        aria-hidden="true"
+        data-v4-draft-empty-mark="true"
+        className="hidden shrink-0 items-center justify-center text-foreground-subtle"
+      >
+        <span
+          className="text-4xl font-semibold leading-none tracking-tight"
+          style={{
+            WebkitTextStroke: "1px var(--color-foreground-subtlest)",
+            color: "transparent",
+            opacity: 0.55,
+          }}
+        >
+          Lief
+        </span>
       </div>
       <p
         ref={greetingContainerRef}
@@ -223,19 +257,36 @@ export function ConversationDraftEmptyState({
         }
         className={cn(
           "relative z-10 w-full px-4 text-center font-medium text-foreground",
-          compactForRemoteControl
-            ? "text-xl/[1.2]"
-            : "text-[length:var(--v4-draft-greeting-font-size)]/[1.2]",
+          showProjectTitle
+            ? "flex flex-wrap items-baseline justify-center gap-x-2 text-[length:var(--v4-draft-greeting-font-size)]/[1.3]"
+            : compactForRemoteControl
+              ? "text-xl/[1.2]"
+              : "text-[length:var(--v4-draft-greeting-font-size)]/[1.2]",
         )}
       >
-        <span
-          ref={greetingMeasurementRef}
-          aria-hidden="true"
-          className="pointer-events-none invisible absolute whitespace-nowrap text-3xl/[1.2]"
-        >
-          {greeting}
-        </span>
-        <span>{greeting}</span>
+        {showProjectTitle ? (
+          <>
+            <span>{intl.formatMessage({ id: "chat.empty.projectGreeting.prefix" })}</span>
+            <span
+              data-v4-draft-project-title="true"
+              className="inline-flex min-w-0 max-w-full items-baseline"
+            >
+              {projectMenu}
+            </span>
+            <span>{intl.formatMessage({ id: "chat.empty.projectGreeting.suffix" })}</span>
+          </>
+        ) : (
+          <>
+            <span
+              ref={greetingMeasurementRef}
+              aria-hidden="true"
+              className="pointer-events-none invisible absolute whitespace-nowrap text-3xl/[1.2]"
+            >
+              {greeting}
+            </span>
+            <span>{greeting}</span>
+          </>
+        )}
       </p>
     </div>
   );

@@ -6,7 +6,7 @@ import type {
   RemoteWorkspaceRecoveryStatus,
 } from "@/app-shell/types.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
-import type { Theme } from "@/useTheme.js";
+import type { StyleTheme, Theme } from "@/useTheme.js";
 export { LEGACY_SINGLE_ROOT_PROJECT_PREFIX } from "@zcode/services";
 export type { WebRemoteControlMobileTaskView, WebRemoteControlStatus } from "@zcode/shared";
 export interface ProjectDevice {
@@ -65,7 +65,7 @@ export interface ProjectAvailability {
   online: boolean;
   unresolved?: boolean;
 }
-export type { Locale, Theme };
+export type { Locale, StyleTheme, Theme };
 export type ProjectSidebarView = "projects" | "grouped" | "timeline";
 export interface SidebarFileTreeTarget {
   workspacePath: string;

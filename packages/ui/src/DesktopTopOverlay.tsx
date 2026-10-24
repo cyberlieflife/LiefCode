@@ -127,6 +127,7 @@ export function DesktopTopOverlay({
           )}
         >
           <div
+            data-desktop-top-overlay-left="true"
             className={cn(
               // 顶部浮层按钮虽然单个按钮打了 no-drag，但外层容器本身仍悬在窗口标题区上方。
               // Electron 在这类覆盖层上会优先按父级命中拖拽区域，导致点击被窗口拖动吞掉。

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { applyTheme } from "@/useTheme.js";
+import { applyTheme, readStyleThemePreference, toggleThemeMode } from "@/useTheme.js";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -22,6 +22,8 @@ describe("applyTheme", () => {
   it.each([
     ["zai-dark", "dark", "#161616"],
     ["zai-light", "light", "#f8f8f8"],
+    ["codex-dark", "dark", "#212121"],
+    ["codex-light", "light", "#ffffff"],
   ] as const)("把 %s 同步到已 opt-in 的浏览器主题表面", (theme, resolvedTheme, background) => {
     document.documentElement.setAttribute("data-zcode-browser-theme-surface", "light");
     document.documentElement.style.setProperty("--color-background", background);
@@ -84,7 +86,59 @@ describe("applyTheme", () => {
     });
 
     expect(() => applyTheme("zai-dark")).not.toThrow();
-    // dark + 四套配色类 + 独立的样式主题层，共 6 次 toggle。
-    expect(toggle).toHaveBeenCalledTimes(6);
+    // dark + 六套配色类 + 三个 UI 方案类逐一收敛，共 10 次 toggle。
+    expect(toggle).toHaveBeenCalledTimes(10);
+  });
+
+  it("配色方案与 UI 方案独立应用", () => {
+    applyTheme("codex-dark", "claude");
+
+    expect(document.documentElement.classList.contains("theme-codex-dark")).toBe(true);
+    expect(document.documentElement.classList.contains("theme-zai-dark")).toBe(false);
+    expect(document.documentElement.classList.contains("style-claude")).toBe(true);
+    expect(document.documentElement.classList.contains("style-codex")).toBe(false);
+    expect(document.documentElement.classList.contains("style-default")).toBe(false);
+  });
+
+  it("未保存 UI 方案时 Claude 配色沿用 Claude 样式，Codex 配色使用默认样式", () => {
+    applyTheme("claude-light");
+    expect(document.documentElement.classList.contains("style-claude")).toBe(true);
+
+    applyTheme("codex-light");
+    expect(document.documentElement.classList.contains("style-claude")).toBe(false);
+    expect(document.documentElement.classList.contains("style-default")).toBe(true);
+  });
+});
+
+describe("readStyleThemePreference", () => {
+  it("显式 UI 方案优先于配色推导", () => {
+    localStorage.setItem("zcode-style-theme", "codex");
+
+    expect(readStyleThemePreference("claude-dark")).toBe("codex");
+  });
+
+  it("缺失或非法时按配色迁移", () => {
+    localStorage.removeItem("zcode-style-theme");
+    expect(readStyleThemePreference("claude-dark")).toBe("claude");
+
+    localStorage.setItem("zcode-style-theme", "legacy");
+    expect(readStyleThemePreference("zai-dark")).toBe("default");
+  });
+});
+
+describe("toggleThemeMode", () => {
+  it("只翻转明暗，保留配色家族", () => {
+    expect(toggleThemeMode("zai-dark")).toBe("zai-light");
+    expect(toggleThemeMode("claude-light")).toBe("claude-dark");
+    expect(toggleThemeMode("codex-dark")).toBe("codex-light");
+  });
+
+  it("system 按系统偏好翻转并归入 Zai", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn(() => ({ matches: true })),
+    );
+
+    expect(toggleThemeMode("system")).toBe("zai-light");
   });
 });

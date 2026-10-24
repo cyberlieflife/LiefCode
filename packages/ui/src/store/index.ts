@@ -53,8 +53,15 @@ import {
   persistTaskNotificationEnabled,
   persistTaskNotificationSoundEnabled,
 } from "@/lib/taskNotificationPreferences.js";
-import type { Theme } from "../useTheme.js";
-import { applyTheme, normalizeThemePreference, resolveTheme } from "../useTheme.js";
+import type { StyleTheme, Theme } from "../useTheme.js";
+import {
+  applyTheme,
+  isStyleTheme,
+  normalizeThemePreference,
+  readStyleThemePreference,
+  resolveTheme,
+  STYLE_THEME_STORAGE_KEY,
+} from "../useTheme.js";
 
 import {
   INTERFACE_MODE_STORAGE_KEY,
@@ -141,9 +148,13 @@ export interface ZCodeState extends UiFontFamilySlice, UiCardStyleSlice {
   interfaceMode: InterfaceMode;
   setInterfaceMode: (mode: InterfaceMode) => void;
 
-  /** 当前主题 */
+  /** 当前配色方案 */
   theme: Theme;
   setTheme: (theme: Theme) => void;
+
+  /** 当前 UI 方案（几何、阴影、排版），与配色方案独立存储 */
+  styleTheme: StyleTheme;
+  setStyleTheme: (styleTheme: StyleTheme) => void;
 
   /** 当前语言 */
   locale: string;
@@ -296,13 +307,23 @@ export function createZCodeStore(
     // 默认主题统一收敛到 Zai dark，避免首次启动时 store 与其他主题入口表现不一致。
     // 仍然优先尊重 localStorage 中已保存的用户选择，不覆盖已有偏好。
     theme: normalizeThemePreference((readSafeLocalStorage("zcode-theme") as Theme) || "zai-dark"),
+    // UI 方案独立持久化；缺失时按配色方案迁移，Claude 配色继续沿用 Claude 样式。
+    styleTheme: readStyleThemePreference(
+      normalizeThemePreference((readSafeLocalStorage("zcode-theme") as Theme) || "zai-dark"),
+    ),
     setTheme: (theme: Theme) => {
       const normalizedTheme = normalizeThemePreference(theme);
       writeSafeLocalStorage("zcode-theme", normalizedTheme);
       syncSystemThemeListener(normalizedTheme);
-      applyTheme(normalizedTheme);
+      applyTheme(normalizedTheme, readStyleThemePreference(normalizedTheme));
 
       set({ theme: normalizedTheme });
+    },
+    setStyleTheme: (styleTheme: StyleTheme) => {
+      writeSafeLocalStorage(STYLE_THEME_STORAGE_KEY, styleTheme);
+      // 配色由 store 当前值决定，两个 setter 各自只改自己那一轴。
+      applyTheme(get().theme, styleTheme);
+      set({ styleTheme });
     },
 
     locale: readSafeLocalStorage("zcode-locale") || "zh-CN",
@@ -474,7 +495,7 @@ export function createZCodeStore(
 
       // system 模式需要持续订阅系统亮暗变化，不能只在切换到 system 的瞬间应用一次。
       // 否则用户后续切系统主题时，DOM 上的 dark class 不会同步更新，看起来就像“跟随系统失效”。
-      applyTheme("system");
+      applyTheme("system", useStore.getState().styleTheme);
     };
 
     if (typeof mediaQuery.addEventListener === "function") {
@@ -534,6 +555,12 @@ export function createZCodeStore(
       const state = useStore.getState();
       if (field === "theme" && typeof msg.payload === "string") {
         state.setTheme(msg.payload as Theme);
+      } else if (
+        field === "styleTheme" &&
+        typeof msg.payload === "string" &&
+        isStyleTheme(msg.payload)
+      ) {
+        state.setStyleTheme(msg.payload);
       } else if (field === "locale" && typeof msg.payload === "string") {
         state.setLocale(msg.payload);
       } else if (
@@ -556,7 +583,7 @@ export function createZCodeStore(
   });
 
   syncSystemThemeListener(useStore.getState().theme);
-  applyTheme(useStore.getState().theme);
+  applyTheme(useStore.getState().theme, useStore.getState().styleTheme);
   applyUiFontSizePx(useStore.getState().uiFontSizePx);
   document.documentElement.classList.toggle(
     "dark",

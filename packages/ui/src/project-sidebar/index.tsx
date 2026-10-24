@@ -10,12 +10,14 @@ import type {
   ProjectSidebarProps,
   VirtualProject,
   Locale,
+  StyleTheme,
   Theme,
   RemoteProjectHost,
 } from "@/project-sidebar/contract.js";
 import { useProjectPinIntent } from "@/project-sidebar/useProjectPinIntent.js";
 import { ProjectTaskListContext } from "@/project-sidebar/ProjectTaskListContext.js";
 import { useWebRemoteControlStatus } from "@/hooks/useWebRemoteControlStatus.js";
+import { CodexSidebarHeader, CodexSidebarRail } from "@/project-sidebar/CodexSidebarRail.js";
 import { useProjectRemoteSync } from "@/project-sidebar/useProjectRemoteSync.js";
 import { useProjectConnectionDiagnostics } from "@/project-sidebar/useProjectConnectionDiagnostics.js";
 import { useWebRemoteControlFeatureEnabled } from "@/WebRemoteControlFeatureProvider.js";
@@ -84,6 +86,8 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   const { intl, localePreference, setLocalePreference } = useZCodeIntl();
   const tabStore = useTabStoreApi();
   const setTheme = useZCodeStore((state) => state.setTheme);
+  const styleTheme = useZCodeStore((state) => state.styleTheme);
+  const setStyleTheme = useZCodeStore((state) => state.setStyleTheme);
   const { openCodingPlanUpgrade } = useCodingPlanUpgradeDialog();
   const { view, setView } = preferences;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -205,6 +209,10 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
     [setLocalePreference],
   );
   const changeTheme = useCallback((value: string) => setTheme(value as Theme), [setTheme]);
+  const changeStyleTheme = useCallback(
+    (value: StyleTheme) => setStyleTheme(value),
+    [setStyleTheme],
+  );
   const upgrade = useCallback<
     NonNullable<Parameters<typeof WorkspaceSidebarFooter>[0]["onUpgradeClick"]>
   >(
@@ -217,10 +225,33 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
   return (
     <ProjectTaskListContext.Provider value={taskPresentation}>
       <SidebarTooltipProvider>
-        <aside data-testid={TID_SIDEBAR} className="flex h-full min-h-0 flex-col overflow-hidden">
+        <aside
+          data-testid={TID_SIDEBAR}
+          className={`flex h-full min-h-0 overflow-hidden ${
+            styleTheme === "codex" ? "flex-row" : "flex-col"
+          }`}
+        >
+          {styleTheme === "codex" ? (
+            <CodexSidebarRail
+              onCreateTask={() => props.onCreateTask()}
+              onOpenAutomations={props.onOpenAutomations}
+              automationsActive={props.automationsActive}
+              onOpenPluginStore={props.onOpenPluginStore}
+              pluginStoreActive={props.pluginStoreActive}
+              onOpenSettings={openSettings}
+              onOpenCommandCenter={props.onOpenCommandCenter}
+              user={props.user}
+              onLogin={props.onLogin}
+            />
+          ) : null}
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <div
-            className={`h-12 shrink-0 [app-region:drag] ${props.isWebRemoteControl ? "max-md:hidden" : ""}`}
-          />
+            className={`flex h-12 shrink-0 items-center gap-2 px-3 [app-region:drag] ${props.isWebRemoteControl ? "max-md:hidden" : ""}`}
+          >
+            {styleTheme === "codex" ? (
+              <CodexSidebarHeader onSearch={props.onOpenCommandCenter} />
+            ) : null}
+          </div>
           {/* 内联改名聚焦曾把 hidden 容器横向滚动，导致手机整栏左移；滑动面板只裁切，不允许焦点滚动。 */}
           <div className="relative min-h-0 flex-1 overflow-clip">
             <div
@@ -324,12 +355,16 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                   </ScrollFadeViewport>
                 </div>
               </div>
+              {/* Codex 方案把账户与设置入口收进左侧图标栏，右列不再重复底部条。 */}
+              {styleTheme !== "codex" ? (
               <WorkspaceSidebarFooter
                 className="pr-3"
                 theme={props.theme}
+                styleTheme={styleTheme}
                 localeMenuValue={localePreference}
                 onLocaleChange={changeLocale}
                 onThemeChange={changeTheme}
+                onStyleThemeChange={changeStyleTheme}
                 onSettingsButtonClick={openSettings}
                 onUsageClick={openSettings}
                 onUpgradeClick={upgrade}
@@ -343,6 +378,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
                 isDesktop={props.isDesktop}
                 banner={banner}
               />
+              ) : null}
             </div>
           </div>
           {creating && service && remoteService ? (
@@ -390,6 +426,7 @@ export const ProjectSidebar = memo(function ProjectSidebar(props: ProjectSidebar
             />
           ) : null}
           {remoteSync.dialog}
+          </div>
         </aside>
       </SidebarTooltipProvider>
     </ProjectTaskListContext.Provider>
