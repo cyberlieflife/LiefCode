@@ -886,3 +886,32 @@ exceptions:
       - packages/ui/src/settings/DynamicWorkflowModeSetting.tsx
       - packages/ui/src/store/dynamicWorkflowAvailabilityStore.ts
     reason: Admitted upstream files edited only to let the user's dynamic workflow mode choice always win and keep the settings row visible; adopting packages/shared/src and packages/ui/src needs a separate module boundary refactor.
+  - id: upstream-3162-security-telemetry-files
+    rule: unmanaged-new-file
+    paths:
+      - apps/zcode-cli/packages/adapters/src/model/request-security-edition/index.ts
+      - apps/zcode-cli/packages/adapters/src/model/request-security-edition/recovery.ts
+      - apps/zcode-cli/packages/telemetry/src/request-security-edition/index.ts
+      - packages/desktop/src/main/request-security-edition/index.ts
+      - packages/desktop/src/renderer/src/armsBrowserBootstrap.ts
+      - packages/desktop/src/shared/armsBrowserInit.ts
+      - packages/shared/src/request-security-edition/index.ts
+      - packages/shared/src/request-security-edition/policy.ts
+      - packages/shared/src/request-security-edition/verification-policy.ts
+      - packages/ui/src/lib/conversationTelemetryLegacyParityE2E.ts
+      - packages/ui/src/lib/conversationTelemetryParityScenarioDefinitions.ts
+      - packages/ui/src/lib/conversationTelemetryParityStateE2E.ts
+      - packages/ui/src/request-security-edition/claim.ts
+      - packages/ui/src/request-security-edition/errors.ts
+      - packages/ui/src/request-security-edition/index.ts
+      - packages/ui/src/request-security-edition/messages.ts
+      - packages/ui/src/request-security-edition/parity.ts
+      - packages/ui/src/v4/telemetry/conversationTelemetryParityE2E.ts
+    reason: ZCode 3.16.2 同步原样引入的请求安全与遥测文件，内容未在本地改写；为这些目录建立受管模块边界需要单独的架构重构。
+  - id: codex-appearance-remote-control-unmanaged-edit
+    rule: unmanaged-new-file
+    paths:
+      - packages/shared/src/web-remote-control.ts
+      - packages/ui/src/WebRemoteControlThemeMenu.tsx
+      - packages/web-share/src/main.tsx
+    reason: Codex 配色方案沿用现有远控主题字段与分享入口，只追加配色枚举和菜单项；这些上游文件相对推送基线属于首次出现，接管 shared、ui 与 web-share 需要单独的模块边界重构。
