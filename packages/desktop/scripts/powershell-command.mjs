@@ -25,7 +25,12 @@ export function createEncodedPowerShellArgs(script, values = []) {
         `$zcodeArg${index}=[Text.Encoding]::UTF8.GetString([Convert]::FromBase64String('${encodeUtf8Value(value)}'));`,
     )
     .join("");
-  const encodedCommand = Buffer.from(`${valueBindings}${script}`, "utf16le").toString("base64");
+  // 调用方统一按 UTF-8 解码 stdout；Windows PowerShell 5.1 默认走 OEM 代码页，
+  // 中文路径不显式切换会在 Node 侧变成乱码。
+  const encodedCommand = Buffer.from(
+    `[Console]::OutputEncoding=[Text.Encoding]::UTF8;${valueBindings}${script}`,
+    "utf16le",
+  ).toString("base64");
   return [...POWERSHELL_COMMON_ARGS, "-EncodedCommand", encodedCommand];
 }
 

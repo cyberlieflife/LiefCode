@@ -11,6 +11,9 @@ export const STATE_BROADCAST_FIELDS = [
   "uiFontFamilyLatin",
   "uiFontFamilyCjk",
   "interfaceMode",
+  // 任务通知开关跨窗口同步：角标是应用级表面，A 窗口关通知而 B 窗口仍上报未读时，
+  // 主进程 max 聚合会让任务栏/托盘继续亮，设置与提醒状态错位。
+  "notificationEnabled",
   "uiCardStyleSidebar",
   "uiCardStyleCardLarge",
   "uiCardStyleCardSmall",
