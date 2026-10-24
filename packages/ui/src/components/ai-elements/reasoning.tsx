@@ -139,12 +139,8 @@ export const Reasoning = memo(
         startTimeRef.current = Date.now();
       }
 
-      // 收起态展示流式摘要，不需要为了隐藏的耗时每秒触发整块 reasoning 重渲染；
-      // 展开时再按同一个开始时间补算并持续更新时间。
-      if (!isOpen) {
-        return;
-      }
-
+      // 运行态收起时同样展示实时秒数，计时不再跟随展开状态启停；
+      // 收起态只渲染触发器，每秒开销局限在文案更新。
       const updateDuration = () => {
         if (startTimeRef.current === null) {
           return;
@@ -155,7 +151,7 @@ export const Reasoning = memo(
       updateDuration();
       const durationTimer = window.setInterval(updateDuration, MS_IN_S);
       return () => window.clearInterval(durationTimer);
-    }, [isOpen, isStreaming, setDuration]);
+    }, [isStreaming, setDuration]);
 
     useEffect(() => {
       const previousAutoCollapseKey = previousAutoCollapseKeyRef.current;
@@ -329,8 +325,22 @@ export const ReasoningTrigger = memo(
     const thinkingMessage =
       getThinkingMessage?.(isStreaming, duration) ??
       (isStreaming && !isOpen ? (
-        <span className="animated-gradient-text font-medium">
-          {intl.formatMessage({ id: "chat.reasoning.thinking" })}
+        <span className="inline-flex items-center gap-2">
+          {/* 扫光渐变只裁切状态文字，秒数保持静态可读。 */}
+          <span className="animated-gradient-text font-medium">
+            {intl.formatMessage({ id: "chat.reasoning.thinking" })}
+          </span>
+          {duration !== undefined ? (
+            <>
+              <span className="font-normal text-foreground-subtlest">·</span>
+              <span className="font-normal text-foreground-subtlest tabular-nums">
+                {intl.formatMessage(
+                  { id: "chat.reasoning.elapsedSeconds" },
+                  { seconds: String(duration) },
+                )}
+              </span>
+            </>
+          ) : null}
         </span>
       ) : duration === undefined ? (
         <span className="inline-flex items-center gap-2">

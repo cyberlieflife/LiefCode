@@ -4406,6 +4406,7 @@ const zhCN: Record<string, string> = {
   "chat.remoteGenerating": "另一台设备正在发送消息...",
   "chat.reasoning.thinking": "正在思考",
   "chat.reasoning.thought": "思考",
+  "chat.reasoning.elapsedSeconds": "{seconds} 秒",
   "chat.reasoning.durationFewSeconds": "持续了几秒",
   "chat.reasoning.durationSeconds": "持续了 {seconds} 秒",
   "chat.contextUsage": "上下文已用 {used} / 总量 {total}",
