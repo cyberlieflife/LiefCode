@@ -420,6 +420,11 @@ export function handleDesktopWindowCloseRequest(options: {
   explicitQuitRequested?: boolean;
   closeToTray?: boolean;
   /**
+   * 桌面宠物常驻时，关闭最后一个窗口改为隐藏窗口而不是退出应用；
+   * 用户仍可通过宠物右键菜单或托盘退出。
+   */
+  keepRunningForDesktopPet?: boolean;
+  /**
    * Linux 关闭驻留的托盘能力（spec：docs/desktop/linux-close-to-tray.md）。
    * GNOME 等无 StatusNotifierWatcher 的桌面托盘不渲染且不报错，必须在隐藏前显式确认能力；
    * 空值按"不可用"安全默认，走确认退出路径，避免窗口隐藏后失联。
@@ -447,6 +452,20 @@ export function handleDesktopWindowCloseRequest(options: {
   ) {
     options.logger.info(`[createWindow] window close hidden to tray (${options.label})`);
     options.hideWindow?.();
+    return true;
+  }
+
+  if (
+    options.keepRunningForDesktopPet &&
+    options.hideWindow &&
+    !options.forceQuit &&
+    !options.explicitQuitRequested
+  ) {
+    // 桌面宠物是独立窗口，关掉主窗口后仍需要后台渲染进程继续同步状态。
+    options.logger.info(
+      `[createWindow] window close hidden for desktop pet (${options.label})`,
+    );
+    options.hideWindow();
     return true;
   }
 

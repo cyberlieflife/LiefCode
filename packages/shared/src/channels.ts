@@ -507,6 +507,28 @@ export const PlatformChannels = {
   MigrateLegacyCommonMcp: "zcode:migrate-legacy-common-mcp",
   /** Renderer → Main：获取当前设备的稳定标识符（deviceMid） */
   GetDeviceId: "zcode:get-device-id",
+  /** 主窗口 → Main：桌面宠物定义（完整精灵表与动画） */
+  PetDesktopSetPet: "zcode:pet-desktop-set-pet",
+  /** 主窗口 → Main：桌面宠物运行状态与通知 */
+  PetDesktopSetStatus: "zcode:pet-desktop-set-status",
+  /** 主窗口 → Main：桌面宠物窗口位置重置 */
+  PetDesktopResetPosition: "zcode:pet-desktop-reset-position",
+  /** Main → 宠物窗口：宠物定义 */
+  PetDesktopSnapshotPet: "zcode:pet-desktop-snapshot-pet",
+  /** Main → 宠物窗口：状态与通知 */
+  PetDesktopSnapshotStatus: "zcode:pet-desktop-snapshot-status",
+  /** 宠物窗口 → Main：读取当前快照（避免窗口加载时序丢首帧） */
+  PetDesktopGetSnapshot: "zcode:pet-desktop-get-snapshot",
+  /** 宠物窗口 → Main：拖动阶段 start/move/end */
+  PetDesktopDrag: "zcode:pet-desktop-drag",
+  /** 宠物窗口 → Main：点击宠物恢复主窗口 */
+  PetDesktopActivateMain: "zcode:pet-desktop-activate-main",
+  /** 宠物窗口 → Main：点击任务条恢复主窗口并切到对应会话 */
+  PetDesktopActivateTask: "zcode:pet-desktop-activate-task",
+  /** 宠物窗口 → Main：右键菜单（打开主窗口 / 退出应用） */
+  PetDesktopContextMenu: "zcode:pet-desktop-context-menu",
+  /** 宠物窗口 → Main：按内容自适应窗口尺寸（保持右下角锚点） */
+  PetDesktopResize: "zcode:pet-desktop-resize",
 } as const;
 
 export type PlatformChannelName = (typeof PlatformChannels)[keyof typeof PlatformChannels];

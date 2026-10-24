@@ -42,6 +42,7 @@ import {
   nativeImage,
   net,
   protocol,
+  screen,
   session,
   shell,
   webContents,
@@ -49,7 +50,8 @@ import {
 import { randomUUID } from "node:crypto";
 import type { UtilityProcess as ElectronUtilityProcess } from "electron";
 import { spawn } from "node:child_process";
-import { join, resolve } from "node:path";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { homedir, hostname } from "node:os";
 import {
   createCredentialService,
@@ -71,6 +73,7 @@ import {
 } from "@zcode/services/node";
 import {
   desktopMenuMessageIds,
+  getDesktopMenuMessage,
   type Locale,
   type AppSettings,
   type appSettingsPatchSchema,
@@ -221,6 +224,12 @@ import {
 import { createWebRemoteControlSharedHostAttachments } from "./webRemoteControlSharedHostAttachments.js";
 import { createDesktopHelpConfigReader } from "./desktopHelpConfig.js";
 import { registerPlatformIpcHandlers } from "./desktopMainIpcPlatform.js";
+import {
+  createDesktopPetWindowController,
+  type DesktopPetWindowController,
+} from "./desktopPetWindow.js";
+import { createRealDesktopPetWindow } from "./desktopPetWindowFactory.js";
+import { registerDesktopPetIpc } from "./desktopPetIpc.js";
 import {
   loadCliMcpFromUserDirectory,
   migrateLegacyCommonMcp,
@@ -571,6 +580,34 @@ let currentDesktopZoomLevel = 0;
 let currentDesktopWindowSize: DesktopWindowSize | undefined;
 const preloadPath = join(import.meta.dirname, "../preload/index.cjs");
 const settingsFile = join(homedir(), ".zcode", "v2", "setting.json");
+let desktopPetController: DesktopPetWindowController | null = null;
+
+function desktopPetPositionFile(): string {
+  return join(app.getPath("userData"), "desktop-pet-window.json");
+}
+
+function loadDesktopPetWindowPosition(): { x: number; y: number } | null {
+  try {
+    const raw = JSON.parse(readFileSync(desktopPetPositionFile(), "utf8")) as unknown;
+    if (!raw || typeof raw !== "object") return null;
+    const { x, y } = raw as { x?: unknown; y?: unknown };
+    if (typeof x !== "number" || !Number.isFinite(x)) return null;
+    if (typeof y !== "number" || !Number.isFinite(y)) return null;
+    return { x: Math.round(x), y: Math.round(y) };
+  } catch {
+    return null;
+  }
+}
+
+function saveDesktopPetWindowPosition(position: { x: number; y: number }): void {
+  const file = desktopPetPositionFile();
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, `${JSON.stringify(position)}\n`, "utf8");
+  } catch (error) {
+    logger.warn("[desktop-pet] failed to persist window position", error);
+  }
+}
 let activeAppShutdownPolicy = resolveAppShutdownPolicy("normal", process.platform);
 let activeAppShutdownKind: AppShutdownKind | null = null;
 const WINDOWS_AGENT_FORCE_KILL_TIMEOUT_MS = 2_000;
@@ -1055,7 +1092,7 @@ function focusForceUpdateGateWindow() {
 }
 
 const primaryWindowCoordinator = createPrimaryWindowCoordinator({
-  listWindows: getApplicationWindowsExcludingCuaIndicator,
+  listWindows: getMainApplicationWindows,
   resolveStartupWindowBootstrap: () => {
     if (startupOpenWorkspaceRequest) {
       const request = startupOpenWorkspaceRequest;
@@ -1629,7 +1666,12 @@ function resolveFocusedDesktopZoomLevel(): number {
 
 function getApplicationWindowsExcludingCuaIndicator(): BrowserWindow[] {
   return BrowserWindow.getAllWindows().filter(
-    (win) => !win.isDestroyed() && !windowsCuaOperationIndicator.ownsWindow(win),
+    (win) =>
+      !win.isDestroyed() &&
+      !windowsCuaOperationIndicator.ownsWindow(win) &&
+      // 桌面宠物是独立置顶窗口，不能参与主窗口恢复/计数，否则主窗口最小化后
+      // 宠物会被当成“已存在的窗口”，点击宠物和菜单都唤不醒主窗口。
+      !(desktopPetController?.isPetWindowSender(win.webContents.id) ?? false),
   );
 }
 
@@ -1872,6 +1914,9 @@ function createWindowInstance(startupBootstrap: StartupWindowBootstrap = {}) {
         logger,
         shouldConfirmQuit: shouldConfirmAppQuit(),
         confirmQuit: () => confirmAppQuit(win),
+        // 宠物窗口以独立置顶窗口承担状态汇报；关闭主窗口时保持后台进程，
+        // 用户可从宠物右键菜单重新打开或退出应用。
+        keepRunningForDesktopPet: desktopPetController?.shouldKeepAppRunning() ?? false,
         requestQuit: () => {
           markForceQuit(`last-window-close:${label}`);
           app.quit();
@@ -2276,6 +2321,64 @@ app.whenReady().then(async () => {
       logger.warn("[desktop-tray] linux tray capability probe failed", error);
     });
   }
+
+  // 桌面宠物是独立置顶窗口：主窗口打开、最小化或隐藏到后台时都常驻。
+  desktopPetController = createDesktopPetWindowController({
+    windowSize: { width: 280, height: 280 },
+    createWindow: (bounds) =>
+      createRealDesktopPetWindow({
+        bounds,
+        preloadPath: join(import.meta.dirname, "../preload/petWindow.cjs"),
+        rendererDir: join(import.meta.dirname, "../renderer"),
+        rendererDevUrl: !app.isPackaged
+          ? process.env["ELECTRON_RENDERER_URL"]
+          : undefined,
+        getMenuLabels: () => ({
+          open: getDesktopMenuMessage(
+            currentApplicationLocale,
+            desktopMenuMessageIds.trayOpenZCode,
+          ),
+          quit: getDesktopMenuMessage(currentApplicationLocale, desktopMenuMessageIds.trayQuit),
+        }),
+        onOpen: () => desktopPetController?.activateMain(),
+        onQuit: () => {
+          markExplicitQuit("pet-window-quit");
+          app.quit();
+        },
+        logger,
+      }),
+    getCursorPoint: () => screen.getCursorScreenPoint(),
+    getPrimaryWorkArea: () => screen.getPrimaryDisplay().workArea,
+    getWorkAreaForBounds: (bounds) => screen.getDisplayMatching(bounds).workArea,
+    loadPosition: loadDesktopPetWindowPosition,
+    savePosition: saveDesktopPetWindowPosition,
+    ensureMainWindow: async (taskId?: string) => {
+      await primaryWindowCoordinator.ensurePrimaryWindow("pet-window-activate");
+      const mainWindow = getMainApplicationWindows()[0];
+      if (!mainWindow || mainWindow.isDestroyed()) return;
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      // 宠物窗口不激活应用，focus 可能被系统拒绝；短暂置顶把主窗口带到最前。
+      mainWindow.moveTop();
+      mainWindow.focus();
+      mainWindow.setAlwaysOnTop(true, "floating");
+      setTimeout(() => {
+        if (!mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(false);
+      }, 300);
+      if (process.platform === "darwin") app.focus({ steal: true });
+      // 复用系统通知的跳转链路：renderer 已按 taskId 反查 workspace 并切换任务。
+      if (taskId && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send(PlatformChannels.TaskNotificationClick, taskId);
+      }
+    },
+    showContextMenu: (window) => window.popupMenu?.(),
+    logger,
+  });
+  registerDesktopPetIpc({ controller: desktopPetController, logger });
+  app.once("before-quit", () => {
+    desktopPetController?.dispose();
+    desktopPetController = null;
+  });
 
   registerPlatformIpcHandlers({
     fetchHelpConfig: readHelpConfig,

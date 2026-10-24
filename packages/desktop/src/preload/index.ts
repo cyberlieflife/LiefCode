@@ -92,6 +92,8 @@ import type {
   OpenCuaPermissionOnboardingOptions,
   ConfigureFinalArmsCustomEventE2ERequest,
   FinalArmsCustomEventE2EEntry,
+  PetDesktopPet,
+  PetDesktopStatus,
 } from "@zcode/shared";
 import { unwrapRemoteWorkspaceBindResult } from "./remoteWorkspaceBindBridge.js";
 import {
@@ -925,6 +927,14 @@ contextBridge.exposeInMainWorld("zcode", {
     ipcRenderer.invoke(PlatformChannels.SetTitleBarTheme, theme),
   /** 获取桌面端设备标识符（deviceMid） */
   getDeviceId: () => ipcRenderer.invoke(PlatformChannels.GetDeviceId),
+  /** 独立桌面宠物窗口：主窗口只同步定义与状态，窗口生命周期由 main 管理。 */
+  petDesktop: {
+    setPet: (pet: PetDesktopPet | null) =>
+      ipcRenderer.send(PlatformChannels.PetDesktopSetPet, pet),
+    setStatus: (status: PetDesktopStatus) =>
+      ipcRenderer.send(PlatformChannels.PetDesktopSetStatus, status),
+    resetPosition: () => ipcRenderer.send(PlatformChannels.PetDesktopResetPosition),
+  },
 });
 
 installPluginSandboxHostBridge();

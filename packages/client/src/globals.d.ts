@@ -388,6 +388,12 @@ declare global {
       getSystemLocale?(): Promise<Locale>;
       /** 同步标题栏亮暗色 */
       setTitleBarTheme(theme: DesktopTitleBarTheme): Promise<void>;
+      /** 独立桌面宠物窗口：同步宠物定义、状态与位置。 */
+      petDesktop: {
+        setPet(pet: import("@zcode/shared").PetDesktopPet | null): void;
+        setStatus(status: import("@zcode/shared").PetDesktopStatus): void;
+        resetPosition(): void;
+      };
     };
   }
 }

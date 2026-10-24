@@ -148,6 +148,20 @@ modules:
       contract: contract.ts
       ui: .
     owner: conversation
+  # pet：Codex 兼容宠物系统（格式解析、内置目录、环境宠物与选择器）
+  - id: pet
+    roots:
+      - packages/ui/src/pet
+    managed: true
+    requires: [shared, ui]
+    publicEntrypoints:
+      - packages/ui/src/pet/index.ts
+      - packages/ui/src/pet/desktopEntry.ts
+      - packages/ui/src/pet/storeSlice.ts
+    layers:
+      contract: contract.ts
+      ui: .
+    owner: conversation
   # remote-projects：由 architecture:adopt 登记
   - id: remote-projects
     roots:
@@ -915,6 +929,15 @@ exceptions:
       - packages/ui/src/WebRemoteControlThemeMenu.tsx
       - packages/web-share/src/main.tsx
     reason: Codex 配色方案沿用现有远控主题字段与分享入口，只追加配色枚举和菜单项；这些上游文件相对推送基线属于首次出现，接管 shared、ui 与 web-share 需要单独的模块边界重构。
+  - id: desktop-pet-window-unmanaged-files
+    rule: unmanaged-new-file
+    paths:
+      - packages/desktop/src/main/desktopPetIpc.ts
+      - packages/desktop/src/main/desktopPetWindow.ts
+      - packages/desktop/src/main/desktopPetWindowFactory.ts
+      - packages/desktop/src/preload/petWindow.ts
+      - packages/desktop/src/renderer/src/petWindow.tsx
+    reason: 桌面宠物是独立置顶窗口，必须同时落在 desktop 的 main、preload 与 renderer 三个未受管目录；拆分受管模块需要单独的边界重构。
   - id: zcode-cli-sessions-index-fanout-throttle-unmanaged-file
     rule: unmanaged-new-file
     paths:

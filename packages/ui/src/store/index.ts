@@ -42,6 +42,12 @@ import {
   type UiCardStyleSlice,
 } from "@/store/uiCardStyleState.js";
 import {
+  applyPetBroadcast,
+  createPetStoreSlice,
+  type PetSlice,
+} from "@/pet/storeSlice.js";
+import {
+  isPetBroadcastField,
   isUiCardStyleBroadcastField,
   isUiFontFamilyBroadcastField,
   STATE_BROADCAST_FIELDS,
@@ -143,7 +149,7 @@ function loadPerformanceMode(): boolean {
 // State 定义
 // ============================================================================
 
-export interface ZCodeState extends UiFontFamilySlice, UiCardStyleSlice {
+export interface ZCodeState extends UiFontFamilySlice, UiCardStyleSlice, PetSlice {
   /** 展示详情偏好，不改变 Agent 权限或执行能力。 */
   interfaceMode: InterfaceMode;
   setInterfaceMode: (mode: InterfaceMode) => void;
@@ -374,6 +380,7 @@ export function createZCodeStore(
 
     ...createUiFontFamilyStoreSlice({ readState: () => get(), writeState: (patch) => set(patch) }),
     ...createUiCardStyleStoreSlice({ readState: () => get(), writeState: (patch) => set(patch) }),
+    ...createPetStoreSlice({ readState: () => get(), writeState: (patch) => set(patch) }),
 
     performanceMode: loadPerformanceMode(),
     setPerformanceMode: (enabled: boolean) => {
@@ -574,6 +581,8 @@ export function createZCodeStore(
         applyUiFontFamilyBroadcast(state, field, msg.payload);
       } else if (isUiCardStyleBroadcastField(field)) {
         applyUiCardStyleBroadcast(state, field, msg.payload);
+      } else if (isPetBroadcastField(field)) {
+        applyPetBroadcast(state, field, msg.payload);
       } else if (field === "notificationEnabled" && typeof msg.payload === "boolean") {
         state.setNotificationEnabled(msg.payload);
       }

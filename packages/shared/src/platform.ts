@@ -47,6 +47,69 @@ export type {
   UpdateStatePayload,
 } from "./update.js";
 
+export interface PetDesktopFrameSpec {
+  width: number;
+  height: number;
+  columns: number;
+  rows: number;
+}
+
+export interface PetDesktopAnimationFrame {
+  spriteIndex: number;
+  durationMs: number;
+}
+
+export interface PetDesktopAnimation {
+  frames: PetDesktopAnimationFrame[];
+  loopStart: number | null;
+  fallback: string;
+}
+
+/** 独立桌面宠物窗口渲染所需的宠物定义（可跨 IPC 序列化）。 */
+export interface PetDesktopPet {
+  id: string;
+  displayName: string;
+  spritesheetUrl: string;
+  frame: PetDesktopFrameSpec;
+  frameCount: number;
+  animations: Record<string, PetDesktopAnimation>;
+}
+
+export type PetDesktopNotificationKind = "running" | "waiting" | "review" | "failed";
+
+/** 宠物窗口最多同时展示的任务卡数量。 */
+export const PET_DESKTOP_MAX_TASKS = 3;
+
+/** 桌宠任务卡：Main 只做形状校验与转发，不解析会话。 */
+export interface PetDesktopTaskCard {
+  taskId: string;
+  kind: PetDesktopNotificationKind;
+  title: string;
+  /** 卡片小字：当前流式正文或状态缺省文案。 */
+  detail: string;
+  /** 过期时间由主窗口计算，宠物窗口在后台被节流时也能按时移除卡片。 */
+  expiresAt: number;
+}
+
+/**
+ * 主窗口 → Main → 桌面宠物窗口的状态。Main 只转发展示数据，
+ * 不解析会话、不持有任务状态。
+ */
+export interface PetDesktopStatus {
+  enabled: boolean;
+  desktopEnabled: boolean;
+  animationsEnabled: boolean;
+  theme: "light" | "dark";
+  /** 精灵显示高度（px）；桌面窗口按它与任务卡内容自适应。 */
+  petSizePx: number;
+  /** 宠物窗口控件文案由主窗口本地化后传入，Main 不生成文案。 */
+  labels: {
+    collapseTasks: string;
+    expandTasks: string;
+  };
+  tasks: PetDesktopTaskCard[];
+}
+
 export interface TaskNotificationPayload {
   taskId: string;
   status: "completed" | "failed" | "permission_request" | "elicitation_request" | "feedback_update";
@@ -730,6 +793,15 @@ export interface IPlatformService {
   createTempTextAttachment?(
     payload: CreateTempTextAttachmentRequest,
   ): Promise<CreateTempTextAttachmentResult>;
+
+  /** Desktop-only：同步独立桌面宠物窗口的宠物定义；传 null 隐藏宠物窗口。 */
+  updatePetDesktopPet?(pet: PetDesktopPet | null): void;
+
+  /** Desktop-only：同步独立桌面宠物窗口的状态、主题与通知。 */
+  updatePetDesktopStatus?(status: PetDesktopStatus): void;
+
+  /** Desktop-only：把桌面宠物窗口移回默认位置。 */
+  resetPetDesktopPosition?(): void;
 
   /**
    * 把 dwf 产物某一版的字节写成宿主本机上的一份副本（只在路径为空时写），返回其路径。

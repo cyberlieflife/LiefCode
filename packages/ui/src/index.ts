@@ -142,3 +142,28 @@ export { GlobalDatabaseStartupLoading } from "./root/GlobalDatabaseStartupLoadin
 
 export { LocalTtftObserver, setLocalTtftObserver } from "@/v4/telemetry/localTtftObserver.js";
 export { ensurePendingTaskDraft } from "@/v4/composer/composerDraftStore.js";
+
+export {
+  DesktopPetView,
+  PetDesktopStatusPublisher,
+  PetSettingsSection,
+  PetSprite,
+  BUILTIN_CODEX_PETS,
+  PET_DEFAULT_PET_ID,
+  PET_DISABLED_ID,
+  buildDefaultPetAnimations,
+  listBuiltinPets,
+  listPetProviders,
+  parseCodexPetManifest,
+  registerPetProvider,
+  resolvePetFrame,
+} from "./pet/index.js";
+export type {
+  DesktopPetWindowBridge,
+  PetAnimation,
+  PetDefinition,
+  PetNotification,
+  PetNotificationKind,
+  PetProvider,
+  PetSnapshot,
+} from "./pet/index.js";

@@ -21,6 +21,11 @@ export const STATE_BROADCAST_FIELDS = [
   "uiCardStyleCardSmall",
   "uiCardStylePanel",
   "uiCardStyleBackground",
+  // 宠物偏好跨窗口同步：每个窗口都独立渲染环境宠物，选择、动画与桌面常驻必须一致。
+  "petId",
+  "petAnimationsEnabled",
+  "petDesktopEnabled",
+  "petSizePx",
 ] as const;
 
 export type StateBroadcastField = (typeof STATE_BROADCAST_FIELDS)[number];
@@ -49,4 +54,18 @@ export type UiCardStyleBroadcastField = (typeof UI_CARD_STYLE_BROADCAST_FIELDS)[
 
 export function isUiCardStyleBroadcastField(field: string): field is UiCardStyleBroadcastField {
   return (UI_CARD_STYLE_BROADCAST_FIELDS as readonly string[]).includes(field);
+}
+
+/** 宠物偏好字段；接收端据此把消息分派到宠物切片 setter。 */
+export const PET_BROADCAST_FIELDS = [
+  "petId",
+  "petAnimationsEnabled",
+  "petDesktopEnabled",
+  "petSizePx",
+] as const;
+
+export type PetBroadcastField = (typeof PET_BROADCAST_FIELDS)[number];
+
+export function isPetBroadcastField(field: string): field is PetBroadcastField {
+  return (PET_BROADCAST_FIELDS as readonly string[]).includes(field);
 }

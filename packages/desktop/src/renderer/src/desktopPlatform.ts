@@ -17,6 +17,9 @@ export function createDesktopPlatform(options: {
     selectDirectories: () => window.zcode.selectDirectories(),
     selectFile: () => window.zcode.selectFile(),
     selectFiles: () => window.zcode.selectFiles?.() ?? Promise.resolve([]),
+    updatePetDesktopPet: (pet) => window.zcode.petDesktop.setPet(pet),
+    updatePetDesktopStatus: (status) => window.zcode.petDesktop.setStatus(status),
+    resetPetDesktopPosition: () => window.zcode.petDesktop.resetPosition(),
     createTempTextAttachment: (payload) => window.zcode.createTempTextAttachment(payload),
     materializeWorkflowArtifactFile: (payload) =>
       window.zcode.materializeWorkflowArtifactFile(payload),

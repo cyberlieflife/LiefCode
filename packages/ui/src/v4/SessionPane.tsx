@@ -218,6 +218,7 @@ import {
 import { createConversationSharePreflightResponseHandlers } from "@/conversation-share-interaction/conversationSharePreflightResponse.js";
 import { scheduleConversationSharePreflightRequest } from "@/conversation-share-interaction/conversationSharePreflightRequest.js";
 import { ConversationBottomDockTransition } from "@/v4/ConversationBottomDockTransition.js";
+import { PetDesktopStatusPublisher } from "@/pet/index.js";
 import {
   ensureConversationShareAttempt,
   retainConversationShareAttemptAfterFailure,
@@ -1908,6 +1909,24 @@ export function SessionPane({
   const projectDirectory = useOptionalProjectDirectory();
   const commitCreatedTask = projectDirectory?.commitCreatedTask;
   const refreshTaskGroups = projectDirectory?.groups.refresh;
+  // 归档是组织态，不会让 sessions-index 摘要消失；宠物任务卡需要按归档集合显式过滤。
+  // 先压成排序后的签名，避免目录树的无关更新（未读、重排）反复重建 Set。
+  const archivedTaskSignature = useMemo(() => {
+    const tasks = projectDirectory?.tree.tasks ?? [];
+    const targetWorkspaceKey = workspaceIdentity?.trim() || workspacePath;
+    const ids: string[] = [];
+    for (const task of tasks) {
+      if (!task.archived) continue;
+      if ((task.workspaceIdentity?.trim() || task.workspacePath) !== targetWorkspaceKey) continue;
+      ids.push(task.taskId);
+    }
+    ids.sort();
+    return ids.join("\u0000");
+  }, [projectDirectory?.tree.tasks, workspaceIdentity, workspacePath]);
+  const archivedTaskIds = useMemo(
+    () => new Set(archivedTaskSignature ? archivedTaskSignature.split("\u0000") : []),
+    [archivedTaskSignature],
+  );
   const draftNavigation = useMemo(
     () => ({ controller: new AbortController() }),
     [workspaceKey, sessionId],
@@ -5707,6 +5726,14 @@ export function SessionPane({
           compactForRemoteControl && "min-w-0",
         )}
       >
+        <PetDesktopStatusPublisher
+          snapshot={snapshot}
+          focused={focused}
+          workspacePath={workspacePath}
+          workspaceIdentity={workspaceIdentity}
+          remoteSessionId={remoteSessionId}
+          archivedTaskIds={archivedTaskIds}
+        />
         {effectiveDropTargetController?.active ? (
           <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-accent/55 backdrop-blur-sm">
             <div className="flex items-center gap-2 rounded-full border border-border bg-accent px-4 py-2 text-ui-base text-foreground shadow-sm">

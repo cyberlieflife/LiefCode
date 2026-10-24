@@ -25,6 +25,7 @@ import { MAX_UI_FONT_SIZE_PX, MIN_UI_FONT_SIZE_PX } from "@/lib/uiFontSize.js";
 import { UiFontFamilySetting } from "@/settings/UiFontFamilySetting.js";
 import type { UiFontFamilyCjk, UiFontFamilyLatin } from "@/lib/uiFontFamily.js";
 import { UiCardStyleSetting } from "@/settings/UiCardStyleSetting.js";
+import { PetSettingsSection } from "@/pet/index.js";
 import type { UiCardStyle, UiCardStyleConfig, UiCardStyleSurface } from "@/lib/uiCardStyle.js";
 
 function FontSizeInput({
@@ -211,6 +212,8 @@ export function AppearanceSectionContent({
         />
 
         <UiCardStyleSetting config={uiCardStyle} onChange={onChangeUiCardStyle} />
+
+        <PetSettingsSection />
       </div>
 
       <div className="space-y-6">

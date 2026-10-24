@@ -237,6 +237,13 @@ export type {
   IPlatformService,
   OpenInEditorRemoteTarget,
   OpenInEditorOptions,
+  PetDesktopAnimation,
+  PetDesktopAnimationFrame,
+  PetDesktopFrameSpec,
+  PetDesktopNotificationKind,
+  PetDesktopPet,
+  PetDesktopStatus,
+  PetDesktopTaskCard,
   PostUpdateReleaseNotesPayload,
   RemoteConnectionRuntimeLog,
   RemoteSessionClosedEvent,
@@ -250,6 +257,7 @@ export type {
   WindowControlsOverlayReadyPayload,
   ZCodeStdioTapDevState,
 } from "./platform.js";
+export { PET_DESKTOP_MAX_TASKS } from "./platform.js";
 export type {
   CuaAccessibilitySettingsResult,
   CuaPermissionKind,

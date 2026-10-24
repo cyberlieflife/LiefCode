@@ -536,6 +536,36 @@ describe("desktopWindowLifecycle handleDarwinWindowCloseRequest", () => {
 });
 
 describe("desktopWindowLifecycle handleDesktopWindowCloseRequest", () => {
+  it("hides the last window instead of quitting while the desktop pet is active", () => {
+    const logger = {
+      info: vi.fn(),
+    };
+    const confirmQuit = vi.fn(() => true);
+    const requestQuit = vi.fn();
+    const hideWindow = vi.fn();
+
+    const prevented = handleDesktopWindowCloseRequest({
+      platform: "win32",
+      forceQuit: false,
+      closeToTraySupported: false,
+      isLastWindow: true,
+      label: "local-9",
+      logger,
+      confirmQuit,
+      requestQuit,
+      hideWindow,
+      keepRunningForDesktopPet: true,
+    });
+
+    expect(prevented).toBe(true);
+    expect(hideWindow).toHaveBeenCalledTimes(1);
+    expect(confirmQuit).not.toHaveBeenCalled();
+    expect(requestQuit).not.toHaveBeenCalled();
+    expect(logger.info).toHaveBeenCalledWith(
+      "[createWindow] window close hidden for desktop pet (local-9)",
+    );
+  });
+
   it("prevents closing when the last Windows window cancel is chosen", () => {
     const logger = {
       info: vi.fn(),
