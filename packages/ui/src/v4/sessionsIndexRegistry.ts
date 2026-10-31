@@ -25,6 +25,8 @@ export type SessionsIndexAgentService = Pick<
 
 interface RegistryEntry {
   key: string;
+  /** 首次 acquire 时的 scope；按 sessionId 反查任务归属时返回给调用方。 */
+  scope: SessionsIndexScope;
   agentService: SessionsIndexAgentService;
   agentServiceGeneration: number;
   store: SessionsIndexStore;
@@ -151,6 +153,7 @@ export function acquireSessionsIndex(
   void store.connect(transport, { forceSnapshot: true });
   const entry: RegistryEntry = {
     key: entryKey,
+    scope,
     agentService,
     agentServiceGeneration: incomingServiceGeneration,
     store,
@@ -175,6 +178,24 @@ export function releaseSessionsIndex(
     entriesByStore.delete(entry.store);
     if (registry.get(entryKey) === entry) registry.delete(entryKey);
   }
+}
+
+/**
+ * 按 sessionId 在已订阅的 sessions-index 中反查 workspace 坐标。
+ *
+ * 任务通知与桌宠任务卡只携带 taskId；v4 任务列表已迁到 sessions-index，
+ * 旧 taskListCache 在普通会话里可能为空，不能作为归属判断的唯一来源。
+ * 这里只读取注册表已有的共享订阅，不建立第二份会话状态。
+ */
+export function findSessionsIndexScopeBySessionId(
+  sessionId: string,
+): SessionsIndexScope | null {
+  for (const entry of registry.values()) {
+    if (entry.store.getSessions().some((session) => session.sessionId === sessionId)) {
+      return entry.scope;
+    }
+  }
+  return null;
 }
 
 /** 仅测试/诊断用：当前注册的 endpoint+workspaceKey 条目数。 */

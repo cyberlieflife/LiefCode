@@ -20,6 +20,7 @@ import {
   shouldPublishCompleteWorkspaceSnapshot,
 } from "@/root/rootPlatformWorkspaceSync.js";
 import { useOptionalBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
+import { findSessionsIndexScopeBySessionId } from "@/v4/sessionsIndexRegistry.js";
 import {
   createShareImportIntent,
   isShareImportIntentSame,
@@ -245,29 +246,69 @@ export function useRootPlatformEffects({
           });
         })
       : () => {};
-    const disposeNotificationClick = platform.onTaskNotificationClick((taskId: string) => {
-      logger.info("[Root] onTaskNotificationClick:", taskId);
-      // 遍历所有 workspace 找到 taskId 所属的 workspace，然后激活对应 tab 并切换任务
-      const workspaces = useZCodeSessionStore.getState().workspaces;
-      for (const [workspacePath, workspaceState] of Object.entries(workspaces)) {
+    function resolveTaskNotificationTarget(
+      taskId: string,
+    ): { workspacePath: string; workspaceIdentity?: string } | null {
+      // sessions-index 是任务卡的同一份事实源；按 sessionId 能精确拿到 workspace 坐标。
+      const scope = findSessionsIndexScopeBySessionId(taskId);
+      if (scope) {
+        return {
+          workspacePath: scope.workspacePath,
+          ...(scope.workspaceIdentity ? { workspaceIdentity: scope.workspaceIdentity } : {}),
+        };
+      }
+      // 新建任务还没进入 sessions-index 时退回 workspace 缓存。
+      for (const [workspaceKey, workspaceState] of Object.entries(
+        useZCodeSessionStore.getState().workspaces,
+      )) {
         const taskMeta = workspaceState.taskListCache?.find((task) => task.taskId === taskId);
-        const hasTask = workspaceState.activeTaskId === taskId || Boolean(taskMeta);
-        if (hasTask) {
-          const targetWorkspacePath = taskMeta?.workspacePath ?? workspacePath;
-          const targetWorkspaceIdentity = taskMeta?.workspaceIdentity;
-          // 通知点击会从全局 workspace store 反查 task。
-          // 远端任务必须用 task meta 自带的 workspaceIdentity 激活和选中，否则会落到 path-only 桶。
-          activateTabByPath(
-            targetWorkspacePath,
-            targetWorkspaceIdentity ? { workspaceIdentity: targetWorkspaceIdentity } : undefined,
+        if (taskMeta) {
+          return {
+            workspacePath: taskMeta.workspacePath,
+            ...(taskMeta.workspaceIdentity
+              ? { workspaceIdentity: taskMeta.workspaceIdentity }
+              : {}),
+          };
+        }
+        if (workspaceState.activeTaskId === taskId) {
+          // store 键是 identity ?? path；从打开的 tab 取回真实路径与身份。
+          const tab = tabs.find(
+            (currentTab): currentTab is Extract<WindowTabState, { kind: "workspace" }> =>
+              isWorkspaceTab(currentTab) &&
+              (currentTab.workspaceIdentity?.trim() || currentTab.workspacePath) === workspaceKey,
           );
-          useZCodeSessionStore
-            .getState()
-            .setActiveTaskId(targetWorkspacePath, taskId, targetWorkspaceIdentity);
-          return;
+          if (tab) {
+            return {
+              workspacePath: tab.workspacePath,
+              ...(tab.workspaceIdentity ? { workspaceIdentity: tab.workspaceIdentity } : {}),
+            };
+          }
         }
       }
-      logger.warn("[Root] onTaskNotificationClick: task not found in any workspace:", taskId);
+      return null;
+    }
+
+    const disposeNotificationClick = platform.onTaskNotificationClick((taskId: string) => {
+      logger.info("[Root] onTaskNotificationClick:", taskId);
+      const target = resolveTaskNotificationTarget(taskId);
+      if (!target) {
+        logger.warn("[Root] onTaskNotificationClick: task not found in any workspace:", taskId);
+        return;
+      }
+      const activated = activateTabByPath(
+        target.workspacePath,
+        target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : undefined,
+      );
+      if (!activated) {
+        // 目标 workspace 没有打开的 tab 时，只改 activeTaskId 不会显示会话，必须先补开 tab。
+        addTab(
+          target.workspacePath,
+          target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : undefined,
+        );
+      }
+      useZCodeSessionStore
+        .getState()
+        .setActiveTaskId(target.workspacePath, taskId, target.workspaceIdentity);
     });
     const disposeUpdateCheckResult = platform.onUpdateCheckResult
       ? platform.onUpdateCheckResult((payload) => {
@@ -324,7 +365,7 @@ export function useRootPlatformEffects({
       disposeNotificationClick();
       disposeUpdateCheckResult();
     };
-  }, [activeWorkspaceIdentity, activeWorkspacePath, platform, tabs]);
+  }, [activeWorkspaceIdentity, activeWorkspacePath, addTab, platform, tabs]);
 
   useEffect(() => {
     const pending = pendingShareImportRef.current;

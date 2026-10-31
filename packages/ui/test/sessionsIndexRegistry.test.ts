@@ -9,6 +9,7 @@ import type {
 import {
   acquireSessionsIndex,
   buildSessionsIndexEntryKey,
+  findSessionsIndexScopeBySessionId,
   releaseSessionsIndex,
   sessionsIndexRegistrySize,
   type SessionsIndexAgentService,
@@ -207,6 +208,62 @@ describe("sessionsIndexRegistry", () => {
     releaseSessionsIndex({ workspaceKey: "ws-a" }, s1);
     releaseSessionsIndex({ workspaceKey: "ws-b" }, s2);
     expect(sessionsIndexRegistrySize()).toBe(0);
+  });
+
+  it("按 sessionId 在已订阅的 sessions-index 中反查 workspace 坐标", async () => {
+    const service = mockAgentService();
+    const scopeA = {
+      workspaceKey: "lookup-a",
+      workspacePath: "/lookup-a",
+      workspaceIdentity: "id-a",
+    };
+    const scopeB = { workspaceKey: "lookup-b", workspacePath: "/lookup-b" };
+    const storeA = acquireSessionsIndex(scopeA, service);
+    const storeB = acquireSessionsIndex(scopeB, service);
+    await vi.waitFor(() => expect(service.subscribeSessionsIndexV4).toHaveBeenCalledTimes(2));
+
+    const snapshot = (
+      store: typeof storeA,
+      workspaceKey: string,
+      sessionId: string,
+    ): void => {
+      store.applyFrame({
+        topic: `sessions-index/${workspaceKey}`,
+        subscriptionId: `sub-${workspaceKey}`,
+        fromSeq: 0,
+        toSeq: 1,
+        sentAt: 1,
+        payload: {
+          kind: "snapshot",
+          snapshot: {
+            protocolVersion: 1,
+            workspaceId: workspaceKey,
+            logEpoch: "epoch-1",
+            sessions: [
+              {
+                sessionId,
+                workspaceId: workspaceKey,
+                title: sessionId,
+                phase: "running",
+                sessionEnded: false,
+                hasBackgroundWork: false,
+                lastActivityAt: 1,
+                createdAt: 1,
+              },
+            ],
+          },
+        },
+      });
+    };
+    snapshot(storeA, "lookup-a", "task-a");
+    snapshot(storeB, "lookup-b", "task-b");
+
+    expect(findSessionsIndexScopeBySessionId("task-a")).toEqual(scopeA);
+    expect(findSessionsIndexScopeBySessionId("task-b")).toEqual(scopeB);
+    expect(findSessionsIndexScopeBySessionId("missing")).toBeNull();
+
+    releaseSessionsIndex(scopeA, storeA);
+    releaseSessionsIndex(scopeB, storeB);
   });
 
   it("M5 ③：同 workspaceKey 不同 endpoint 不共用 store，各走各的 agentService 订阅", async () => {

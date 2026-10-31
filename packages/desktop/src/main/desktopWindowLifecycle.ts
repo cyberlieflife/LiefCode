@@ -26,6 +26,8 @@ import {
 } from "./resourceManagerWindow.js";
 
 const DEFAULT_RUNTIME_PROCESS_ENV_WAIT_TIMEOUT_MS = 4_500;
+const MAIN_WINDOW_RAISE_INTERVAL_MS = 150;
+const MAIN_WINDOW_RAISE_DURATION_MS = 1_500;
 
 export function createWindow(options: {
   iconPath: string;
@@ -326,6 +328,51 @@ export function focusWorkspaceInExistingWindow(
   }
 
   return { activated: false };
+}
+
+/** 抬升主窗口所需的最小窗口面，便于用假窗口覆盖原生调用顺序。 */
+interface ForegroundRaisableWindow {
+  isDestroyed(): boolean;
+  isMinimized?(): boolean;
+  isVisible(): boolean;
+  restore?(): void;
+  show(): void;
+  focus?(): void;
+  moveTop(): void;
+  setAlwaysOnTop(flag: boolean, level?: "screen-saver"): void;
+}
+
+/**
+ * 把主窗口带到最前。
+ *
+ * 宠物窗口不获取焦点（WS_EX_NOACTIVATE），点击它时系统可能拒绝主窗口的前台切换；
+ * 无边框全屏应用本身也在 topmost 层级，floating 压不住。这里临时抬到
+ * screen-saver（与宠物窗口一致），在有限时间内反复 moveTop，结束后恢复普通层级，
+ * 避免主窗口长期压住其它窗口。
+ */
+export function raiseMainWindowToFront(win: ForegroundRaisableWindow): void {
+  if (win.isDestroyed()) return;
+  if (win.isMinimized?.()) win.restore?.();
+  if (!win.isVisible()) win.show();
+  win.setAlwaysOnTop(true, "screen-saver");
+  win.moveTop();
+  win.focus?.();
+
+  const startedAt = Date.now();
+  const timer = setInterval(() => {
+    if (win.isDestroyed()) {
+      clearInterval(timer);
+      return;
+    }
+    if (Date.now() - startedAt >= MAIN_WINDOW_RAISE_DURATION_MS) {
+      clearInterval(timer);
+      win.setAlwaysOnTop(false);
+      return;
+    }
+    win.moveTop();
+    win.focus?.();
+  }, MAIN_WINDOW_RAISE_INTERVAL_MS);
+  timer.unref?.();
 }
 
 // Windows 任务栏 overlay 的 electron 侧装配：像素渲染在 unreadBadge.ts（纯逻辑，可单测），

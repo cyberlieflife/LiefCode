@@ -163,6 +163,7 @@ import {
   configureDockMenu,
   createWindow,
   focusWorkspaceInExistingWindow,
+  raiseMainWindowToFront,
   showCurrentWindowFromDock,
   syncApplicationUnreadBadge,
   handleDesktopWindowCloseRequest,
@@ -2356,17 +2357,10 @@ app.whenReady().then(async () => {
       await primaryWindowCoordinator.ensurePrimaryWindow("pet-window-activate");
       const mainWindow = getMainApplicationWindows()[0];
       if (!mainWindow || mainWindow.isDestroyed()) return;
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      if (!mainWindow.isVisible()) mainWindow.show();
-      // 宠物窗口不激活应用，focus 可能被系统拒绝；短暂置顶把主窗口带到最前。
-      mainWindow.moveTop();
-      mainWindow.focus();
-      mainWindow.setAlwaysOnTop(true, "floating");
-      setTimeout(() => {
-        if (!mainWindow.isDestroyed()) mainWindow.setAlwaysOnTop(false);
-      }, 300);
+      // 无边框全屏应用也在 topmost 层级，floating 压不住；统一走有限时长的 screen-saver 抬升。
+      raiseMainWindowToFront(mainWindow);
       if (process.platform === "darwin") app.focus({ steal: true });
-      // 复用系统通知的跳转链路：renderer 已按 taskId 反查 workspace 并切换任务。
+      // 复用系统通知的跳转链路：renderer 按 taskId 反查 sessions-index 并切换会话。
       if (taskId && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send(PlatformChannels.TaskNotificationClick, taskId);
       }

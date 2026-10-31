@@ -33,6 +33,7 @@ import { createBrowserWindow } from "../src/main/desktopWindowChrome.js";
 import {
   createWindow,
   handleDesktopWindowCloseRequest,
+  raiseMainWindowToFront,
 } from "../src/main/desktopWindowLifecycle.js";
 
 describe("desktopWindowLifecycle createWindow", () => {
@@ -797,5 +798,59 @@ describe("desktopWindowLifecycle handleDesktopWindowCloseRequest", () => {
     expect(prevented).toBe(true);
     expect(hideWindow).not.toHaveBeenCalled();
     expect(confirmQuit).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("raiseMainWindowToFront", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("恢复并显示窗口后临时抬到 screen-saver，有限时长后恢复普通层级", () => {
+    vi.useFakeTimers();
+    const win = {
+      isDestroyed: vi.fn(() => false),
+      isMinimized: vi.fn(() => true),
+      isVisible: vi.fn(() => false),
+      restore: vi.fn(),
+      show: vi.fn(),
+      focus: vi.fn(),
+      moveTop: vi.fn(),
+      setAlwaysOnTop: vi.fn(),
+    };
+
+    raiseMainWindowToFront(win);
+
+    expect(win.restore).toHaveBeenCalledTimes(1);
+    expect(win.show).toHaveBeenCalledTimes(1);
+    expect(win.setAlwaysOnTop).toHaveBeenNthCalledWith(1, true, "screen-saver");
+    expect(win.moveTop).toHaveBeenCalledTimes(1);
+    expect(win.focus).toHaveBeenCalledTimes(1);
+
+    vi.advanceTimersByTime(1_500);
+
+    // 全屏程序会持续重申 topmost；有限时长内反复抬升，结束后必须让出层级。
+    expect(win.moveTop.mock.calls.length).toBeGreaterThan(1);
+    expect(win.setAlwaysOnTop).toHaveBeenLastCalledWith(false);
+
+    const moveTopCalls = win.moveTop.mock.calls.length;
+    vi.advanceTimersByTime(5_000);
+    expect(win.moveTop).toHaveBeenCalledTimes(moveTopCalls);
+  });
+
+  it("窗口已销毁时不做任何原生调用", () => {
+    const win = {
+      isDestroyed: vi.fn(() => true),
+      isVisible: vi.fn(() => false),
+      show: vi.fn(),
+      moveTop: vi.fn(),
+      setAlwaysOnTop: vi.fn(),
+    };
+
+    raiseMainWindowToFront(win);
+
+    expect(win.show).not.toHaveBeenCalled();
+    expect(win.moveTop).not.toHaveBeenCalled();
+    expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
   });
 });
