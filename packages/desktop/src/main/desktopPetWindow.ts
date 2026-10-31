@@ -63,6 +63,9 @@ export interface DesktopPetWindowControllerOptions {
 
 const DEFAULT_WINDOW_SIZE = { width: 280, height: 280 };
 const SCREEN_MARGIN_PX = 24;
+// 任务栏与无边框全屏应用都在 floating 层级之上；screen-saver 才能稳定压住它们。
+const PET_TOPMOST_LEVEL = "screen-saver" as const;
+const TOPMOST_GUARD_INTERVAL_MS = 1000;
 
 function clampAxis(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), Math.max(min, max));
@@ -93,16 +96,39 @@ export function createDesktopPetWindowController(
   let pet: PetDesktopPet | null = null;
   let status: PetDesktopStatus | null = null;
   let dragOffset: { x: number; y: number } | null = null;
+  let dragMoveHandle: ReturnType<typeof setImmediate> | null = null;
   let topmostTimer: ReturnType<typeof setInterval> | null = null;
+
+  // 指针事件一帧内可能到达多次；只保留一次窗口定位，避免主进程被原生移动调用占满。
+  function cancelScheduledDragMove(): void {
+    if (!dragMoveHandle) return;
+    clearImmediate(dragMoveHandle);
+    dragMoveHandle = null;
+  }
+
+  function applyDragPosition(): void {
+    if (!dragOffset || !window || window.isDestroyed()) return;
+    const cursor = options.getCursorPoint();
+    window.setPosition(cursor.x - dragOffset.x, cursor.y - dragOffset.y);
+  }
+
+  function scheduleDragMove(): void {
+    if (dragMoveHandle) return;
+    dragMoveHandle = setImmediate(() => {
+      dragMoveHandle = null;
+      applyDragPosition();
+    });
+    dragMoveHandle.unref?.();
+  }
 
   function startTopmostGuard(): void {
     if (topmostTimer) return;
     // Windows 在移动/缩放透明置顶窗口后会丢掉 WS_EX_TOPMOST；低频重申保证宠物始终可见。
     topmostTimer = setInterval(() => {
       if (window && !window.isDestroyed() && window.isVisible()) {
-        window.setAlwaysOnTop(true, "floating");
+        window.setAlwaysOnTop(true, PET_TOPMOST_LEVEL);
       }
-    }, 2000);
+    }, TOPMOST_GUARD_INTERVAL_MS);
     topmostTimer.unref?.();
   }
 
@@ -163,7 +189,7 @@ export function createDesktopPetWindowController(
         // 等主窗口稳定后再申一次，之后由顶置守卫维持。
         const timer = setTimeout(() => {
           if (window === created && !created.isDestroyed() && isActive()) {
-            created.setAlwaysOnTop(true, "floating");
+            created.setAlwaysOnTop(true, PET_TOPMOST_LEVEL);
             created.showInactive();
           }
         }, 500);
@@ -255,6 +281,7 @@ export function createDesktopPetWindowController(
 
     handleDrag(phase) {
       if (phase === "start") {
+        cancelScheduledDragMove();
         if (!window || window.isDestroyed()) return;
         const bounds = window.getBounds();
         const cursor = options.getCursorPoint();
@@ -262,12 +289,14 @@ export function createDesktopPetWindowController(
         return;
       }
       if (phase === "move") {
-        if (!dragOffset || !window || window.isDestroyed()) return;
-        const cursor = options.getCursorPoint();
-        window.setPosition(cursor.x - dragOffset.x, cursor.y - dragOffset.y);
+        if (!dragOffset) return;
+        scheduleDragMove();
         return;
       }
       if (!dragOffset) return;
+      // 松手时以最新光标位置校正：最后一帧指针事件可能已被渲染进程合并或丢弃。
+      cancelScheduledDragMove();
+      applyDragPosition();
       dragOffset = null;
       if (!window || window.isDestroyed()) return;
       const bounds = window.getBounds();
@@ -275,6 +304,8 @@ export function createDesktopPetWindowController(
       if (clamped.x !== bounds.x || clamped.y !== bounds.y) {
         window.setBounds(clamped);
       }
+      // 拖动期间不逐帧重申层级，松手时补一次，避免移动过程中反复重排 z-order。
+      window.setAlwaysOnTop(true, PET_TOPMOST_LEVEL);
       options.savePosition({ x: clamped.x, y: clamped.y });
     },
 
@@ -307,6 +338,7 @@ export function createDesktopPetWindowController(
 
     dispose() {
       stopTopmostGuard();
+      cancelScheduledDragMove();
       if (window && !window.isDestroyed()) window.destroy();
       window = null;
       windowReady = false;

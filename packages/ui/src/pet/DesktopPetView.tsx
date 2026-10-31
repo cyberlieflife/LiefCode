@@ -377,6 +377,7 @@ export function DesktopPetView({
   const [dragAnimation, setDragAnimation] = useState<ManualPetAnimation | null>(null);
   const [hoverAnimation, setHoverAnimation] = useState<ManualPetAnimation | null>(null);
   const dragRef = useRef<DragState | null>(null);
+  const dragFrameRef = useRef<number | null>(null);
   const dragDirectionRef = useRef<DragDirection | null>(null);
   const lastScreenXRef = useRef<number | null>(null);
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -421,6 +422,7 @@ export function DesktopPetView({
   useEffect(
     () => () => {
       if (hoverTimerRef.current !== null) clearTimeout(hoverTimerRef.current);
+      if (dragFrameRef.current !== null) cancelAnimationFrame(dragFrameRef.current);
     },
     [],
   );
@@ -436,10 +438,26 @@ export function DesktopPetView({
     });
   };
 
+  // 指针事件一帧内可能到达多次；合并成每帧最多一条 IPC，避免主进程堆满窗口定位。
+  const cancelScheduledDragMove = () => {
+    if (dragFrameRef.current === null) return;
+    cancelAnimationFrame(dragFrameRef.current);
+    dragFrameRef.current = null;
+  };
+
+  const scheduleDragMove = () => {
+    if (dragFrameRef.current !== null) return;
+    dragFrameRef.current = requestAnimationFrame(() => {
+      dragFrameRef.current = null;
+      if (dragRef.current) bridge.dragMove();
+    });
+  };
+
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    cancelScheduledDragMove();
     dragRef.current = {
       pointerId: event.pointerId,
       startX: event.screenX,
@@ -471,7 +489,7 @@ export function DesktopPetView({
         updateDragDirection(deltaX < 0 ? "left" : "right");
       }
     }
-    bridge.dragMove();
+    scheduleDragMove();
   };
 
   const finishPointer = (event: PointerEvent<HTMLDivElement>, cancelled: boolean) => {
@@ -480,6 +498,7 @@ export function DesktopPetView({
     dragRef.current = null;
     dragDirectionRef.current = null;
     lastScreenXRef.current = null;
+    cancelScheduledDragMove();
     setDragging(false);
     setDragAnimation(null);
     try {
@@ -488,7 +507,11 @@ export function DesktopPetView({
       // pointer capture 可能已被系统释放，忽略即可。
     }
     bridge.dragEnd();
-    if (!cancelled && !drag.moved) bridge.activateMainWindow();
+    // 用抬指位置复核位移：窗口跟随鼠标时可能丢掉 pointermove，不能让拖动被当成单击。
+    const moved =
+      drag.moved ||
+      Math.hypot(event.screenX - drag.startX, event.screenY - drag.startY) > DRAG_THRESHOLD_PX;
+    if (!cancelled && !moved) bridge.activateMainWindow();
   };
 
   const handlePointerEnter = () => {
@@ -585,6 +608,8 @@ export function DesktopPetView({
         onPointerMove={handlePointerMove}
         onPointerUp={(event) => finishPointer(event, false)}
         onPointerCancel={(event) => finishPointer(event, true)}
+        // 窗口移动或被系统接管时可能丢失指针捕获；不结束拖动会让宠物永久停在拖拽态。
+        onLostPointerCapture={(event) => finishPointer(event, true)}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         onContextMenu={(event) => {

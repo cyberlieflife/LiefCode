@@ -47,6 +47,7 @@ class FakeDesktopPetWindow implements DesktopPetWindow {
   visible = false;
   destroyed = false;
   menuShown = false;
+  positionCalls = 0;
   sent: Array<{ channel: string; payload: unknown }> = [];
   private readyCallback: (() => void) | null = null;
   private closedCallback: (() => void) | null = null;
@@ -78,6 +79,7 @@ class FakeDesktopPetWindow implements DesktopPetWindow {
   }
 
   setPosition(x: number, y: number) {
+    this.positionCalls += 1;
     this.bounds = { ...this.bounds, x, y };
   }
 
@@ -114,6 +116,10 @@ class FakeDesktopPetWindow implements DesktopPetWindow {
   ready() {
     this.readyCallback?.();
   }
+}
+
+function flushDragMove(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
 }
 
 function createHarness() {
@@ -197,7 +203,7 @@ describe("desktop pet window controller", () => {
     expect(harness.controller.shouldKeepAppRunning()).toBe(true);
   });
 
-  it("drags through the cursor offset and clamps to the work area on release", () => {
+  it("drags through the cursor offset and clamps to the work area on release", async () => {
     const harness = createHarness();
     harness.controller.updatePet(createPet());
     harness.controller.updateStatus(createStatus());
@@ -209,6 +215,7 @@ describe("desktop pet window controller", () => {
     harness.controller.handleDrag("start");
     harness.setCursor({ x: 1500, y: 420 });
     harness.controller.handleDrag("move");
+    await flushDragMove();
     expect(window.getBounds().x).toBe(1416);
     expect(window.getBounds().y).toBe(376);
 
@@ -219,6 +226,34 @@ describe("desktop pet window controller", () => {
     expect(window.getBounds().x).toBe(0);
     expect(window.getBounds().y).toBe(0);
     expect(harness.saved).toHaveBeenCalledWith({ x: 0, y: 0 });
+  });
+
+  it("coalesces queued drag moves and lands on the release cursor", async () => {
+    const harness = createHarness();
+    harness.controller.updatePet(createPet());
+    harness.controller.updateStatus(createStatus());
+    const window = harness.getWindow();
+    window?.ready();
+    if (!window) return;
+
+    harness.setCursor({ x: 1700, y: 820 });
+    harness.controller.handleDrag("start");
+    harness.setCursor({ x: 1600, y: 700 });
+    harness.controller.handleDrag("move");
+    harness.setCursor({ x: 1500, y: 600 });
+    harness.controller.handleDrag("move");
+    // 同一轮事件循环内的多次移动只落一次原生定位。
+    expect(window.positionCalls).toBe(0);
+    await flushDragMove();
+    expect(window.positionCalls).toBe(1);
+    expect(window.getBounds()).toMatchObject({ x: 1416, y: 556 });
+
+    // 最后一帧没有送达时，松手仍以当前光标位置校正。
+    harness.setCursor({ x: 1300, y: 500 });
+    harness.controller.handleDrag("move");
+    harness.controller.handleDrag("end");
+    expect(window.getBounds()).toMatchObject({ x: 1216, y: 456 });
+    expect(window.positionCalls).toBe(2);
   });
 
   it("resizes around the bottom-right anchor", () => {

@@ -50,7 +50,8 @@ export function createRealDesktopPetWindow(options: {
   });
 
   win.setSkipTaskbar(true);
-  win.setAlwaysOnTop(true, "floating");
+  // Windows 上 floating 层级低于任务栏，无边框全屏应用会盖住宠物；使用最高层级。
+  win.setAlwaysOnTop(true, "screen-saver");
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
@@ -80,10 +81,10 @@ export function createRealDesktopPetWindow(options: {
     isVisible: () => !win.isDestroyed() && win.isVisible(),
     showInactive() {
       if (win.isDestroyed()) return;
-      win.setAlwaysOnTop(true, "floating");
+      win.setAlwaysOnTop(true, "screen-saver");
       win.showInactive();
       // Windows 上主窗口激活或最大化时可能把普通置顶窗口压下去；显示后再次抬升。
-      win.setAlwaysOnTop(true, "floating");
+      win.setAlwaysOnTop(true, "screen-saver");
       win.moveTop();
     },
     hide() {
@@ -93,11 +94,9 @@ export function createRealDesktopPetWindow(options: {
       if (!win.isDestroyed()) win.destroy();
     },
     setPosition(x, y) {
-      if (!win.isDestroyed()) {
-        win.setPosition(Math.round(x), Math.round(y));
-        // 移动透明置顶窗口后 Windows 可能丢掉 topmost，每次移动后补申。
-        win.setAlwaysOnTop(true, "floating");
-      }
+      if (win.isDestroyed()) return;
+      // 拖动中每帧只移动窗口；逐帧重申顶层会反复重排 z-order，造成拖动卡顿。
+      win.setPosition(Math.round(x), Math.round(y));
     },
     getBounds() {
       const bounds = win.getBounds();
@@ -116,7 +115,7 @@ export function createRealDesktopPetWindow(options: {
           width: bounds.width,
           height: bounds.height,
         });
-        win.setAlwaysOnTop(true, "floating");
+        win.setAlwaysOnTop(true, "screen-saver");
       }
     },
     setAlwaysOnTop(flag, level) {
