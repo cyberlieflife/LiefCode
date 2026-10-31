@@ -199,14 +199,14 @@ const paletteScope = parseDeclarations(tailwindThemeCss);
 // 默认亮主题的语义 token 定义在 Tailwind v4 的 @theme 块，其余主题以类选择器覆盖级联。
 const baseThemeScope = parseDeclarations(extractBlock(stylesCss, "@theme"));
 const rootScope = parseDeclarations(extractBlock(stylesCss, ":root"));
-const themeSelectors = {
-  defaultLight: "@theme",
-  defaultDark: ".dark",
-  zaiLight: ".theme-zai-light",
-  zaiDark: ".theme-zai-dark",
-  codexLight: ".theme-codex-light",
-  codexDark: ".theme-codex-dark",
-} as const;
+// 默认明暗主题加上 styles.css 动态发现的全部配色块，新增主题自动纳入对比度门禁。
+const themeSelectors = new Map<string, string>([
+  ["defaultLight", "@theme"],
+  ["defaultDark", ".dark"],
+  ...[...stylesCss.matchAll(/^\.(theme-[\w-]+)/gm)].map(
+    (match) => [match[1]!, match[0]!] as [string, string],
+  ),
+]);
 const parentBackgrounds = [
   "background",
   "surface",
@@ -221,7 +221,7 @@ describe("remote UI semantic surface tokens", () => {
   it("keeps all theme/background/semantic combinations readable with real token values", () => {
     const combinations: string[] = [];
     const violations: string[] = [];
-    for (const [theme, selector] of Object.entries(themeSelectors)) {
+    for (const [theme, selector] of themeSelectors) {
       const themeScope = parseDeclarations(extractBlock(stylesCss, selector));
       const scopes: Scope = [themeScope, baseThemeScope, paletteScope];
       const pageBackground = resolveToken("--color-background", scopes);
@@ -247,14 +247,14 @@ describe("remote UI semantic surface tokens", () => {
         }
       }
     }
-    expect(combinations).toHaveLength(144);
+    expect(combinations).toHaveLength(themeSelectors.size * 24);
     // 阈值 4.5:1 是 §8.3 合同的硬门禁；失败即 token 取值的规格缺陷，修 token 并回写文档。
     expect(violations).toEqual([]);
   });
 
   it("远程标签、侧栏和设置导航在所有配色主题中达到 4.5:1", () => {
     const violations: string[] = [];
-    for (const [theme, selector] of Object.entries(themeSelectors)) {
+    for (const [theme, selector] of themeSelectors) {
       const scopes: Scope = [
         parseDeclarations(extractBlock(stylesCss, selector)),
         rootScope,
@@ -290,7 +290,7 @@ describe("remote UI semantic surface tokens", () => {
     const descriptors = ["remote-ssh", "remote-wsl", "remote-docker"] as const;
     const channels = ["surface", "foreground", "border"] as const;
 
-    for (const [theme, selector] of Object.entries(themeSelectors)) {
+    for (const [theme, selector] of themeSelectors) {
       const themeScope = parseDeclarations(extractBlock(stylesCss, selector));
       const scopes: Scope = [themeScope, rootScope, baseThemeScope, paletteScope];
       for (const descriptor of descriptors) {
@@ -305,7 +305,7 @@ describe("remote UI semantic surface tokens", () => {
   });
 
   it("keeps the dedicated continuity panel readable in all four themes", () => {
-    for (const [theme, selector] of Object.entries(themeSelectors)) {
+    for (const [theme, selector] of themeSelectors) {
       const themeScope = parseDeclarations(extractBlock(stylesCss, selector));
       const scopes: Scope = [themeScope, rootScope, baseThemeScope, paletteScope];
       const panel = resolveToken("--color-remote-continuity-panel", scopes);

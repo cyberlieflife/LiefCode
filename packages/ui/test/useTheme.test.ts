@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyTheme, readStyleThemePreference, toggleThemeMode } from "@/useTheme.js";
+import { CODEX_UI_THEMES } from "@/lib/codexThemes.js";
 
 beforeEach(() => {
   document.head.innerHTML = "";
@@ -22,7 +23,7 @@ describe("applyTheme", () => {
   it.each([
     ["zai-dark", "dark", "#161616"],
     ["zai-light", "light", "#f8f8f8"],
-    ["codex-dark", "dark", "#212121"],
+    ["codex-dark", "dark", "#111111"],
     ["codex-light", "light", "#ffffff"],
   ] as const)("把 %s 同步到已 opt-in 的浏览器主题表面", (theme, resolvedTheme, background) => {
     document.documentElement.setAttribute("data-zcode-browser-theme-surface", "light");
@@ -86,8 +87,8 @@ describe("applyTheme", () => {
     });
 
     expect(() => applyTheme("zai-dark")).not.toThrow();
-    // dark + 六套配色类 + 三个 UI 方案类逐一收敛，共 10 次 toggle。
-    expect(toggle).toHaveBeenCalledTimes(10);
+    // dark + 全部配色类 + 三个 UI 方案类逐一收敛。
+    expect(toggle).toHaveBeenCalledTimes(1 + 2 + 2 + CODEX_UI_THEMES.length + 3);
   });
 
   it("配色方案与 UI 方案独立应用", () => {
@@ -131,6 +132,8 @@ describe("toggleThemeMode", () => {
     expect(toggleThemeMode("zai-dark")).toBe("zai-light");
     expect(toggleThemeMode("claude-light")).toBe("claude-dark");
     expect(toggleThemeMode("codex-dark")).toBe("codex-light");
+    expect(toggleThemeMode("github-dark-default")).toBe("github-light-default");
+    expect(toggleThemeMode("one-light")).toBe("one-dark-pro");
   });
 
   it("system 按系统偏好翻转并归入 Zai", () => {

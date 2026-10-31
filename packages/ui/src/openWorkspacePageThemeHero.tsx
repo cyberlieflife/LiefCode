@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/components/lib/utils.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
-import { resolveTheme } from "@/useTheme.js";
+import { isCodexTheme, resolveTheme } from "@/useTheme.js";
 import type { Theme } from "@/useTheme.js";
 
 interface ThemeHeroPalette {
@@ -15,6 +15,10 @@ interface ThemeHeroPalette {
 }
 
 function getThemeHeroPalette(theme: Theme): ThemeHeroPalette {
+  // 新增的 Codex 主题共用官方 Codex 首屏配色，只按明暗选择一套。
+  if (isCodexTheme(theme) && theme !== "codex-dark" && theme !== "codex-light") {
+    return getThemeHeroPalette(resolveTheme(theme) === "dark" ? "codex-dark" : "codex-light");
+  }
   switch (theme) {
     case "light":
       return {

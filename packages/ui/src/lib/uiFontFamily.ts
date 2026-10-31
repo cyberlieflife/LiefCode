@@ -3,8 +3,21 @@
  */
 import { readSafeLocalStorage } from "@/lib/browserEnvironment.js";
 
-export type UiFontFamilyLatin = "system" | "anthropic-serif" | "opendyslexic";
-export type UiFontFamilyCjk = "system" | "noto-serif-sc" | "microsoft-yahei" | "smiley-sans";
+export type UiFontFamilyLatin =
+  | "system"
+  | "anthropic-serif"
+  | "opendyslexic"
+  | "inter"
+  | "ibm-plex-sans"
+  | "atkinson-hyperlegible"
+  | "literata";
+export type UiFontFamilyCjk =
+  | "system"
+  | "noto-serif-sc"
+  | "microsoft-yahei"
+  | "smiley-sans"
+  | "lxgw-wenkai"
+  | "noto-sans-sc";
 
 export const UI_FONT_FAMILY_LATIN_STORAGE_KEY = "zcode-ui-font-latin";
 export const UI_FONT_FAMILY_CJK_STORAGE_KEY = "zcode-ui-font-cjk";
@@ -21,6 +34,11 @@ const UI_FONT_LATIN_STACKS: Record<UiFontFamilyLatin, string> = {
   "anthropic-serif":
     '"Tiempos Headline", "Copernicus", "Iowan Old Style", "Palatino Linotype", "Source Serif Pro", Georgia, Cambria',
   opendyslexic: '"OpenDyslexic", ui-sans-serif, system-ui, -apple-system, "Segoe UI"',
+  inter: '"Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI"',
+  "ibm-plex-sans": '"IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI"',
+  "atkinson-hyperlegible":
+    '"Atkinson Hyperlegible", ui-sans-serif, system-ui, -apple-system, "Segoe UI"',
+  literata: '"Literata", "Iowan Old Style", "Palatino Linotype", Georgia, Cambria',
 };
 
 const UI_FONT_CJK_STACKS: Record<UiFontFamilyCjk, string> = {
@@ -29,18 +47,26 @@ const UI_FONT_CJK_STACKS: Record<UiFontFamilyCjk, string> = {
   "noto-serif-sc": '"Noto Serif SC", "Songti SC", "SimSun", serif',
   "microsoft-yahei": '"Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif',
   "smiley-sans": '"Smiley Sans Oblique", "PingFang SC", "Microsoft YaHei UI", sans-serif',
+  "lxgw-wenkai": '"LXGW WenKai", "PingFang SC", "Microsoft YaHei UI", sans-serif',
+  "noto-sans-sc": '"Noto Sans SC", "PingFang SC", "Microsoft YaHei UI", sans-serif',
 };
 
 export const UI_FONT_LATIN_OPTION_ORDER: readonly UiFontFamilyLatin[] = [
   "system",
+  "inter",
+  "ibm-plex-sans",
   "anthropic-serif",
+  "literata",
+  "atkinson-hyperlegible",
   "opendyslexic",
 ];
 
 export const UI_FONT_CJK_OPTION_ORDER: readonly UiFontFamilyCjk[] = [
   "system",
+  "noto-sans-sc",
   "noto-serif-sc",
   "microsoft-yahei",
+  "lxgw-wenkai",
   "smiley-sans",
 ];
 

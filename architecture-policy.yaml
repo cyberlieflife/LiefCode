@@ -761,6 +761,10 @@ global:
   acceptedUpstreamSnapshot: scripts/architecture/upstream-snapshot.json
 
 exceptions:
+  - id: codex-ui-theme-manifest
+    rule: unmanaged-new-file
+    paths: [packages/ui/src/lib/codexThemes.ts]
+    reason: 该文件是 Codex 配色清单的生成产物，为 Theme 类型、设置页和首帧脚本提供唯一数据源；ui 模块尚未受管，本次只登记这一个生成产物，不扩大 ui 的受管范围。
   - id: side-pane-full-view-shortcut-command-edit
     rule: unmanaged-new-file
     paths: [packages/shared/src/shortcutCommands.ts]

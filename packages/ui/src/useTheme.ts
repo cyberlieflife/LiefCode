@@ -1,4 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
+import {
+  CODEX_UI_THEMES,
+  getCodexUiTheme,
+  isCodexUiThemeId,
+  type CodexUiThemeId,
+} from "./lib/codexThemes.js";
 
 export type Theme =
   | "light"
@@ -7,9 +13,8 @@ export type Theme =
   | "zai-dark"
   | "claude-light"
   | "claude-dark"
-  | "codex-light"
-  | "codex-dark"
-  | "system";
+  | "system"
+  | CodexUiThemeId;
 export type ResolvedTheme = "light" | "dark";
 
 /**
@@ -23,14 +28,13 @@ export const THEME_STORAGE_KEY = "zcode-theme";
 export const STYLE_THEME_STORAGE_KEY = "zcode-style-theme";
 const BROWSER_THEME_SURFACE_ATTRIBUTE = "data-zcode-browser-theme-surface";
 /** 挂在 documentElement 上的配色类，取值与 Theme 的非 system 值一一对应。 */
-const THEME_CLASS_NAMES = [
+const THEME_CLASS_NAMES: readonly string[] = [
   "theme-zai-light",
   "theme-zai-dark",
   "theme-claude-light",
   "theme-claude-dark",
-  "theme-codex-light",
-  "theme-codex-dark",
-] as const;
+  ...CODEX_UI_THEMES.map((theme) => `theme-${theme.id}`),
+];
 /** UI 方案类名始终收敛到一个，切换时不会残留上一个方案。 */
 const STYLE_THEME_CLASS_NAMES = ["style-default", "style-claude", "style-codex"] as const;
 
@@ -45,7 +49,7 @@ export function isClaudeTheme(theme: Theme): boolean {
 }
 
 export function isCodexTheme(theme: Theme): boolean {
-  return theme === "codex-light" || theme === "codex-dark";
+  return isCodexUiThemeId(theme);
 }
 
 export function isStyleTheme(value: string | null | undefined): value is StyleTheme {
@@ -63,12 +67,14 @@ export function resolveStyleTheme(theme: Theme, explicit?: StyleTheme | null): S
 
 /** 不含 system 的主题直接映射明暗，供无 window 环境（如 SSR 兜底）复用。 */
 export function resolveStaticTheme(theme: Exclude<Theme, "system">): ResolvedTheme {
-  return theme === "dark" ||
-    theme === "zai-dark" ||
-    theme === "claude-dark" ||
-    theme === "codex-dark"
-    ? "dark"
-    : "light";
+  if (theme === "dark" || theme === "zai-dark" || theme === "claude-dark") {
+    return "dark";
+  }
+  if (theme === "light" || theme === "zai-light" || theme === "claude-light") {
+    return "light";
+  }
+  // Codex 主题的明暗由主题清单声明，不能再靠名称后缀猜测。
+  return getCodexUiTheme(theme)?.variant ?? "dark";
 }
 
 export function resolveTheme(theme: Theme): ResolvedTheme {
@@ -98,9 +104,20 @@ export function normalizeThemePreference(theme: Theme): Theme {
  * 旧实现直接写 light/dark，会被归一成 Zai，导致 Claude/Codex 配色丢失。
  */
 export function toggleThemeMode(theme: Theme): Theme {
-  const family = isClaudeTheme(theme) ? "claude" : isCodexTheme(theme) ? "codex" : "zai";
-  const nextMode = resolveTheme(theme) === "dark" ? "light" : "dark";
-  return `${family}-${nextMode}` as Theme;
+  const normalized = normalizeThemePreference(theme);
+  const nextMode = resolveTheme(normalized) === "dark" ? "light" : "dark";
+  if (isClaudeTheme(normalized)) {
+    return nextMode === "dark" ? "claude-dark" : "claude-light";
+  }
+  const codexTheme = getCodexUiTheme(normalized);
+  if (codexTheme) {
+    // Codex 主题按家族配对明暗变体，切换时优先保留当前家族。
+    const sibling = CODEX_UI_THEMES.find(
+      (candidate) => candidate.family === codexTheme.family && candidate.variant === nextMode,
+    );
+    return sibling?.id ?? (nextMode === "dark" ? "codex-dark" : "codex-light");
+  }
+  return nextMode === "dark" ? "zai-dark" : "zai-light";
 }
 
 /** 读取 UI 方案偏好；缺失或非法时按配色方案迁移。 */
@@ -160,17 +177,20 @@ export function applyTheme(theme: Theme, styleTheme?: StyleTheme | null) {
   syncBrowserThemeSurface(resolved);
 }
 
+const BASE_THEME_VALUES: ReadonlySet<string> = new Set([
+  "light",
+  "dark",
+  "zai-light",
+  "zai-dark",
+  "claude-light",
+  "claude-dark",
+  "system",
+]);
+
 export function isTheme(value: string | null | undefined): value is Theme {
   return (
-    value === "light" ||
-    value === "dark" ||
-    value === "zai-light" ||
-    value === "zai-dark" ||
-    value === "claude-light" ||
-    value === "claude-dark" ||
-    value === "codex-light" ||
-    value === "codex-dark" ||
-    value === "system"
+    typeof value === "string" &&
+    (BASE_THEME_VALUES.has(value) || isCodexUiThemeId(value))
   );
 }
 

@@ -71,9 +71,9 @@ Each color scheme defines the full semantic token set (142 tokens) in [styles.cs
 
 - **Zai**: `.theme-zai-light`, `.theme-zai-dark`.
 - **Claude**: `.theme-claude-light`, `.theme-claude-dark`.
-- **Codex**: `.theme-codex-light`, `.theme-codex-dark`.
+- **Codex**: every id in `CODEX_UI_THEMES` (43 light/dark variants from Codex's bundled shiki themes), each rendered as `.theme-<id>`.
 
-Selecting a color scheme toggles exactly one `theme-<scheme>-<mode>` class. `System` resolves to the Zai palette at the system light/dark preference, preserving the historical behavior. Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
+Selecting a color scheme toggles exactly one `theme-<id>` class. `System` resolves to the Zai palette at the system light/dark preference, preserving the historical behavior. Default light and dark CSS variables still exist as fallback foundations, but new UI should be validated against Zai Light and Zai Dark as the active light/dark experiences.
 
 The Claude palette follows Anthropic's published design tokens (cream canvas, coral accent, warm ink). Some official marketing colors fall below readable contrast on the cream canvas (2.0-2.5:1), so semantic colors used as text or fills are darkened along the same hue. The coral primary fill keeps the official `#cc785c` value; its white foreground matches the contrast already shipped by the existing dark destructive button.
 
@@ -322,7 +322,8 @@ The Appearance setting exposes separate Latin and Chinese interface font choices
 write into `--ui-font-latin` and `--ui-font-cjk`, which `--font-sans` composes in that
 order. Never hardcode a font family on a container: an explicit `font-family` there
 overrides the composed stack and silently ignores the setting. Bundled choices
-(OpenDyslexic, Noto Serif SC, Smiley Sans) ship as `@font-face` assets under
+(Inter, IBM Plex Sans, Atkinson Hyperlegible, Literata, OpenDyslexic, Noto Sans SC,
+Noto Serif SC, LXGW WenKai, Smiley Sans) ship as `@font-face` assets under
 `packages/ui/src/assets/fonts/`; `--font-mono` and code content are never affected.
 
 ### UI font tokens

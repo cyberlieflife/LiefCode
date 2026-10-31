@@ -9,18 +9,12 @@ import {
 } from "@/components/ui/dropdown-menu.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
+import { getCodexUiTheme } from "@/lib/codexThemes.js";
+import { THEME_MODES } from "@/settings/settingsPageConfig.js";
 import type { Theme } from "@/useTheme.js";
 
 // 手机端只提供配色方案；UI 方案沿用桌面同步值，避免移动端菜单过长。
-const MOBILE_THEME_OPTIONS: Theme[] = [
-  "system",
-  "zai-dark",
-  "zai-light",
-  "claude-dark",
-  "claude-light",
-  "codex-dark",
-  "codex-light",
-];
+const MOBILE_THEME_OPTIONS: Theme[] = THEME_MODES.map(({ mode }) => mode);
 
 export function WebRemoteControlThemeMenu() {
   const { intl } = useZCodeIntl();
@@ -48,13 +42,17 @@ export function WebRemoteControlThemeMenu() {
             }
           }}
         >
-          {MOBILE_THEME_OPTIONS.map((option) => (
-            <DropdownMenuRadioItem key={option} value={option}>
-              {option === "system"
-                ? intl.formatMessage({ id: "sidebar.settings.systemDefault" })
-                : intl.formatMessage({ id: `sidebar.settings.theme.${option}` })}
-            </DropdownMenuRadioItem>
-          ))}
+          {MOBILE_THEME_OPTIONS.map((option) => {
+            const codexTheme = getCodexUiTheme(option);
+            return (
+              <DropdownMenuRadioItem key={option} value={option}>
+                {option === "system"
+                  ? intl.formatMessage({ id: "sidebar.settings.systemDefault" })
+                  : (codexTheme?.label ??
+                    intl.formatMessage({ id: `sidebar.settings.theme.${option}` }))}
+              </DropdownMenuRadioItem>
+            );
+          })}
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>

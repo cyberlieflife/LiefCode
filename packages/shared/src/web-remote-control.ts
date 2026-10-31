@@ -26,6 +26,52 @@ import type { WorkspacePurpose } from "./workspacePurpose.js";
 export const WEB_REMOTE_CONTROL_WORKSPACE_RECONNECT_TIMEOUT_MS = 120_000;
 export const WEB_REMOTE_CONTROL_OUTBOUND_PAYLOAD_BUFFER_TIMEOUT_MS = 5_000;
 
+const WEB_REMOTE_CONTROL_CODEX_THEME_IDS: ReadonlySet<string> = new Set([
+  "absolutely-dark",
+  "absolutely-light",
+  "ayu-dark",
+  "catppuccin-latte",
+  "catppuccin-mocha",
+  "codex-dark",
+  "codex-light",
+  "dark-plus",
+  "dracula",
+  "everforest-dark",
+  "everforest-light",
+  "github-dark-default",
+  "github-light-default",
+  "gruvbox-dark-medium",
+  "gruvbox-light-medium",
+  "light-plus",
+  "linear-dark",
+  "linear-light",
+  "lobster-dark",
+  "material-theme-darker",
+  "matrix-dark",
+  "monokai",
+  "night-owl",
+  "nord",
+  "notion-dark",
+  "notion-light",
+  "one-dark-pro",
+  "one-light",
+  "oscurange",
+  "proof-light",
+  "raycast-dark",
+  "raycast-light",
+  "rose-pine-dawn",
+  "rose-pine-moon",
+  "sentry-dark",
+  "solarized-dark",
+  "solarized-light",
+  "temple-dark",
+  "tokyo-night",
+  "vercel-dark",
+  "vercel-light",
+  "xcode-dark",
+  "xcode-light",
+]);
+
 export type WebRemoteControlThemeSeed =
   | "light"
   | "dark"
@@ -33,9 +79,50 @@ export type WebRemoteControlThemeSeed =
   | "zai-dark"
   | "claude-light"
   | "claude-dark"
-  | "codex-light"
+  | "system"
+  | "absolutely-dark"
+  | "absolutely-light"
+  | "ayu-dark"
+  | "catppuccin-latte"
+  | "catppuccin-mocha"
   | "codex-dark"
-  | "system";
+  | "codex-light"
+  | "dark-plus"
+  | "dracula"
+  | "everforest-dark"
+  | "everforest-light"
+  | "github-dark-default"
+  | "github-light-default"
+  | "gruvbox-dark-medium"
+  | "gruvbox-light-medium"
+  | "light-plus"
+  | "linear-dark"
+  | "linear-light"
+  | "lobster-dark"
+  | "material-theme-darker"
+  | "matrix-dark"
+  | "monokai"
+  | "night-owl"
+  | "nord"
+  | "notion-dark"
+  | "notion-light"
+  | "one-dark-pro"
+  | "one-light"
+  | "oscurange"
+  | "proof-light"
+  | "raycast-dark"
+  | "raycast-light"
+  | "rose-pine-dawn"
+  | "rose-pine-moon"
+  | "sentry-dark"
+  | "solarized-dark"
+  | "solarized-light"
+  | "temple-dark"
+  | "tokyo-night"
+  | "vercel-dark"
+  | "vercel-light"
+  | "xcode-dark"
+  | "xcode-light";
 
 export interface WebRemoteControlContext {
   workspacePath: string;
@@ -146,9 +233,8 @@ export function isWebRemoteControlThemeSeed(value: unknown): value is WebRemoteC
     value === "zai-dark" ||
     value === "claude-light" ||
     value === "claude-dark" ||
-    value === "codex-light" ||
-    value === "codex-dark" ||
-    value === "system"
+    value === "system" ||
+    (typeof value === "string" && WEB_REMOTE_CONTROL_CODEX_THEME_IDS.has(value))
   );
 }
 

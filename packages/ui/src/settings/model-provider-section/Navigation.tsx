@@ -17,7 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Loader2Icon } from "lucide-react";
+import { Copy, Loader2Icon } from "lucide-react";
 import { ProviderStatusIndicator } from "./ProviderStatusIndicator.js";
 
 import {
@@ -25,8 +25,15 @@ import {
   isStartPlanModelProviderId,
 } from "@zcode/shared";
 import { TID_MODEL_PROVIDER_NAV_ITEM, testId } from "@zcode/shared/test-ids";
-import { useCallback, useMemo, type KeyboardEvent } from "react";
+import { useCallback, useMemo, type KeyboardEvent, type ReactNode } from "react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu.js";
+import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import type { ModelProviderNavGroup, ModelProviderNavItem } from "./constants.js";
 import { useOptimisticReorder } from "./useOptimisticReorder.js";
 import { renderModelProviderNavIcon } from "./utils.js";
@@ -80,6 +87,77 @@ export function resolveModelProviderSideNavLabel(item: ModelProviderNavItem): st
   return item.label;
 }
 
+async function copyTextToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // 剪贴板权限被拒绝时保持菜单可用，不额外弹错。
+  }
+}
+
+export function resolveProviderNavigationCopyId(item: ModelProviderNavItem): string | null {
+  if (item.type === "custom") return item.provider.providerId;
+  if (item.type === "preset" || item.type === "codingPlan" || item.type === "teamPlan") {
+    return item.presetId;
+  }
+  return null;
+}
+
+/** 只复制非敏感字段，避免把 API Key 或认证头写进剪贴板。 */
+export function buildProviderNavigationCopyConfig(item: ModelProviderNavItem): string | null {
+  if (item.type !== "custom") return null;
+  const { provider } = item;
+  return JSON.stringify(
+    {
+      providerId: provider.providerId,
+      providerName: provider.providerName ?? provider.providerId,
+      baseUrl: provider.config.api?.baseUrl ?? null,
+      models: provider.models.map((model) => model.modelId),
+    },
+    null,
+    2,
+  );
+}
+
+function ProviderNavigationContextMenu({
+  item,
+  label,
+  children,
+}: {
+  item: ModelProviderNavItem;
+  label: string;
+  children: ReactNode;
+}) {
+  const { intl } = useZCodeIntl();
+  const providerId = resolveProviderNavigationCopyId(item);
+  const config = buildProviderNavigationCopyConfig(item);
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div className="w-full max-md:w-auto">{children}</div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => void copyTextToClipboard(label)}>
+          <Copy className="size-3.5" />
+          {intl.formatMessage({ id: "settings.modelProvider.copyName" })}
+        </ContextMenuItem>
+        {providerId ? (
+          <ContextMenuItem onSelect={() => void copyTextToClipboard(providerId)}>
+            <Copy className="size-3.5" />
+            {intl.formatMessage({ id: "settings.modelProvider.copyId" })}
+          </ContextMenuItem>
+        ) : null}
+        {config ? (
+          <ContextMenuItem onSelect={() => void copyTextToClipboard(config)}>
+            <Copy className="size-3.5" />
+            {intl.formatMessage({ id: "settings.modelProvider.copyConfig" })}
+          </ContextMenuItem>
+        ) : null}
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
+
 function ModelProviderNavigationButton({
   item,
   label,
@@ -98,8 +176,9 @@ function ModelProviderNavigationButton({
   const inactiveItemClassName = "border-transparent text-foreground hover:border-border-hover/60";
 
   return (
-    <ControlHintTooltip title={label} side="right">
-      <button
+    <ProviderNavigationContextMenu item={item} label={label}>
+      <ControlHintTooltip title={label} side="right">
+        <button
         type="button"
         disabled={isLoadingItem}
         aria-label={label}
@@ -132,7 +211,8 @@ function ModelProviderNavigationButton({
           />
         ) : null}
       </button>
-    </ControlHintTooltip>
+      </ControlHintTooltip>
+    </ProviderNavigationContextMenu>
   );
 }
 
@@ -182,9 +262,10 @@ function SortableModelProviderNavigationButton({
   };
 
   return (
-    <ControlHintTooltip title={label} side="right">
-      <div
-        ref={setNodeRef}
+    <ProviderNavigationContextMenu item={item} label={label}>
+      <ControlHintTooltip title={label} side="right">
+        <div
+          ref={setNodeRef}
         style={style}
         aria-label={label}
         aria-selected={isSelected}
@@ -211,8 +292,9 @@ function SortableModelProviderNavigationButton({
             provider={item.type === "preset" ? item.statusProvider : item.provider}
           />
         ) : null}
-      </div>
-    </ControlHintTooltip>
+        </div>
+      </ControlHintTooltip>
+    </ProviderNavigationContextMenu>
   );
 }
 

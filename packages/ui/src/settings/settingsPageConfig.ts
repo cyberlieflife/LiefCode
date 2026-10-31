@@ -25,6 +25,7 @@ import {
   Code2,
 } from "lucide-react";
 import { isSettingsSectionEnabled, type SettingsSectionId } from "@/lib/settingsNavigation.js";
+import { CODEX_UI_THEMES, getCodexUiTheme } from "@/lib/codexThemes.js";
 import type { StyleTheme, Theme } from "@/useTheme.js";
 
 /** 配色方案：决定颜色 token；System 按系统明暗套用 Zai 家族。 */
@@ -37,9 +38,23 @@ export const THEME_MODES: Array<{
   { mode: "zai-light", icon: Sun },
   { mode: "claude-dark", icon: MoonStar },
   { mode: "claude-light", icon: SunMedium },
-  { mode: "codex-dark", icon: Code2 },
-  { mode: "codex-light", icon: Code2 },
+  ...CODEX_UI_THEMES.map((theme) => ({
+    mode: theme.id,
+    icon: theme.variant === "dark" ? Moon : Sun,
+  })),
 ];
+
+export function isDarkThemeMode(mode: Theme): boolean {
+  if (mode === "zai-dark" || mode === "claude-dark") return true;
+  if (mode === "zai-light" || mode === "claude-light") return false;
+  return getCodexUiTheme(mode)?.variant === "dark";
+}
+
+/** 深色与浅色分组只服务设置页下拉，System 单独放在顶部。 */
+export const THEME_MODE_GROUPS = {
+  dark: THEME_MODES.filter(({ mode }) => mode !== "system" && isDarkThemeMode(mode)),
+  light: THEME_MODES.filter(({ mode }) => mode !== "system" && !isDarkThemeMode(mode)),
+};
 
 /** UI 方案：只决定圆角、阴影与标题排版，与配色方案独立组合。 */
 export const STYLE_THEMES: Array<{

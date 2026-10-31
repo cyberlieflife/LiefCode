@@ -7,7 +7,9 @@ import { Switch } from "@/components/ui/switch.js";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.js";
@@ -20,7 +22,8 @@ import {
 import { getCodePreviewTheme } from "@/lib/codePreviewPreferences.js";
 import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import type { CodePreviewSettings } from "@/store/index.js";
-import { STYLE_THEMES, THEME_MODES } from "@/settings/settingsPageConfig.js";
+import { STYLE_THEMES, THEME_MODE_GROUPS, THEME_MODES } from "@/settings/settingsPageConfig.js";
+import { getCodexUiTheme } from "@/lib/codexThemes.js";
 import { MAX_UI_FONT_SIZE_PX, MIN_UI_FONT_SIZE_PX } from "@/lib/uiFontSize.js";
 import { UiFontFamilySetting } from "@/settings/UiFontFamilySetting.js";
 import type { UiFontFamilyCjk, UiFontFamilyLatin } from "@/lib/uiFontFamily.js";
@@ -116,6 +119,21 @@ export function AppearanceSectionContent({
 }) {
   const { intl } = useZCodeIntl();
   const activePreviewMode = resolveTheme(theme);
+  const renderThemeModeItem = ({ mode, icon: Icon }: (typeof THEME_MODES)[number]) => {
+    // Codex 主题名是产品专有名词，直接展示；Zai / Claude 继续使用本地化文案。
+    const codexTheme = getCodexUiTheme(mode);
+    return (
+      <SelectItem key={mode} value={mode}>
+        <div className="flex items-center gap-2">
+          <Icon className="size-4" />
+          {codexTheme?.label ??
+            intl.formatMessage({
+              id: `settings.themeMode.${mode}`,
+            })}
+        </div>
+      </SelectItem>
+    );
+  };
 
   return (
     <>
@@ -143,16 +161,26 @@ export function AppearanceSectionContent({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {THEME_MODES.map(({ mode, icon: Icon }) => (
-                      <SelectItem key={mode} value={mode}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="size-4" />
-                          {intl.formatMessage({
-                            id: `settings.themeMode.${mode}`,
-                          })}
-                        </div>
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      <SelectLabel>
+                        {intl.formatMessage({ id: "settings.themeMode.groupSystem" })}
+                      </SelectLabel>
+                      {THEME_MODES.filter(({ mode }) => mode === "system").map(
+                        renderThemeModeItem,
+                      )}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>
+                        {intl.formatMessage({ id: "settings.themeMode.groupDark" })}
+                      </SelectLabel>
+                      {THEME_MODE_GROUPS.dark.map(renderThemeModeItem)}
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>
+                        {intl.formatMessage({ id: "settings.themeMode.groupLight" })}
+                      </SelectLabel>
+                      {THEME_MODE_GROUPS.light.map(renderThemeModeItem)}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               }

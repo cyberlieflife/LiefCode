@@ -50,6 +50,8 @@ import { useShortcutCommandLabel } from "@/shortcuts/useShortcutBindings.js";
 import { useZCodeStore } from "@/store/StoreProvider.js";
 import { normalizeInterfaceMode } from "@/lib/interfaceMode.js";
 import type { StyleTheme, Theme } from "@/useTheme.js";
+import { THEME_MODES } from "@/settings/settingsPageConfig.js";
+import { getCodexUiTheme } from "@/lib/codexThemes.js";
 import { WorkspaceWebRemoteControlTrigger } from "@/WorkspaceWebRemoteControlTrigger.js";
 import {
   WorkspaceSidebarFooterPlanBadge,
@@ -357,41 +359,21 @@ export const WorkspaceSidebarFooter = memo(function WorkspaceSidebarFooterCompon
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="w-48">
                 <DropdownMenuRadioGroup value={theme} onValueChange={onThemeChange}>
-                  <DropdownMenuRadioItem value="system">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.systemDefault",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="zai-dark">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.zai-dark",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="zai-light">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.zai-light",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="claude-dark">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.claude-dark",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="claude-light">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.claude-light",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="codex-dark">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.codex-dark",
-                    })}
-                  </DropdownMenuRadioItem>
-                  <DropdownMenuRadioItem value="codex-light">
-                    {intl.formatMessage({
-                      id: "sidebar.settings.theme.codex-light",
-                    })}
-                  </DropdownMenuRadioItem>
+                  {THEME_MODES.map(({ mode }) => {
+                    const codexTheme = getCodexUiTheme(mode);
+                    return (
+                      <DropdownMenuRadioItem key={mode} value={mode}>
+                        {mode === "system"
+                          ? intl.formatMessage({
+                              id: "sidebar.settings.systemDefault",
+                            })
+                          : (codexTheme?.label ??
+                            intl.formatMessage({
+                              id: `sidebar.settings.theme.${mode}`,
+                            }))}
+                      </DropdownMenuRadioItem>
+                    );
+                  })}
                 </DropdownMenuRadioGroup>
               </DropdownMenuSubContent>
             </DropdownMenuSub>

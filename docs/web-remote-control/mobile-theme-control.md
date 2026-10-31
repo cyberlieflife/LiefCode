@@ -7,7 +7,7 @@
 
 这样可以保证之后两端互不影响：手机端切主题只改手机浏览器本地存储，桌面端切主题只改桌面 renderer 的本地存储。
 
-手机端任务首页与桌面共用项目侧栏，主题入口在侧栏底部设置菜单的外观子菜单中；聊天页顶栏右侧渲染 `WebRemoteControlThemeMenu`。手机端提供配色方案选择：`system`、`zai-light`、`zai-dark`、`claude-light`、`claude-dark`、`codex-light`、`codex-dark`。UI 方案不在手机端单独暴露，沿用桌面同步过来的 `zcode-style-theme`；手机本地没有该值时按配色方案迁移（Claude 配色使用 Claude 方案，其余使用默认方案）。
+手机端任务首页与桌面共用项目侧栏，主题入口在侧栏底部设置菜单的外观子菜单中；聊天页顶栏右侧渲染 `WebRemoteControlThemeMenu`。手机端提供配色方案选择：`system`、Zai、Claude，以及 `CODEX_UI_THEMES` 中的全部 Codex 主题；列表与桌面设置页共用 `THEME_MODES`。UI 方案不在手机端单独暴露，沿用桌面同步过来的 `zcode-style-theme`；手机本地没有该值时按配色方案迁移（Claude 配色使用 Claude 方案，其余使用默认方案）。
 
 配色方案与 UI 方案是两个独立存储：`zcode-theme` 与 `zcode-style-theme`。手机端切换配色只修改 `zcode-theme`，不会覆盖 UI 方案。
 
