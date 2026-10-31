@@ -160,6 +160,12 @@ vi.mock("@/store/StoreProvider.js", () => ({
   useZCodeStoreWithDefault: (_selector: unknown, fallback: unknown) => fallback,
 }));
 
+// 桌宠状态发布器依赖 StoreProvider / TabStoreProvider 与 sessions-index；
+// 本文件只验证会话布局，不挂桌宠发布链路。
+vi.mock("@/pet/PetDesktopStatusPublisher.js", () => ({
+  PetDesktopStatusPublisher: () => null,
+}));
+
 vi.mock("@/v4/composer/useDraftConfigControl.js", () => ({
   buildDraftCreateConfigPayload: () => ({}),
   useDraftConfigControl: () => ({
