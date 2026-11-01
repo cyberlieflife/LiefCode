@@ -111,6 +111,7 @@ export {
 } from "@zcode/contracts";
 export type {
   CollaborationMode,
+  SessionAgentMode,
   GoalStatus,
   Logger,
   AttachmentStorageMetadata,

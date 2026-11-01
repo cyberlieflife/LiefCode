@@ -5,6 +5,7 @@ import type {
   BackgroundTaskCancelResult,
   BrowserControlPort,
   CollaborationMode,
+  SessionAgentMode,
   ContextSourcePort,
   DynamicWorkflowRunArtifact,
   DynamicWorkflowRunArtifactBytes,
@@ -719,6 +720,45 @@ export interface ZCodeApp {
     previousMode: CollaborationMode;
     traceId: TraceContext["traceId"];
   }>;
+  /** 会话模式：agent <-> superagent；endOpenTickets 仅降级时生效。 */
+  getAgentMode(): SessionAgentMode;
+  setAgentMode(
+    agentMode: SessionAgentMode,
+    options?: { endOpenTickets?: boolean },
+  ): Promise<{
+    agentMode: SessionAgentMode;
+    previousAgentMode: SessionAgentMode;
+    traceId: TraceContext["traceId"];
+  }>;
+  /** SuperAgent 面板快照；未启用或本构建未装配时返回 null。 */
+  getSuperAgentSnapshot(): unknown | null;
+  superAgentAction(payload: {
+    action:
+      | "pause"
+      | "resume"
+      | "ticket.retry"
+      | "ticket.stop"
+      | "ticket.status"
+      | "reevaluate"
+      | "dismiss"
+      | "unsubscribe"
+      | "note";
+    ticketId?: string;
+    triggerId?: string;
+    decisionId?: string;
+    threadKey?: string;
+    text?: string;
+  }): Promise<unknown>;
+  saveSuperAgentSettings(payload: {
+    block: "policy" | "executor" | "sources";
+    value: unknown;
+    revision: number;
+  }): Promise<unknown>;
+  saveSuperAgentPrompts(payload: {
+    sections: { communication: string; ticketScope: string; delivery: string };
+    overrides: { part: string; text: string; baseText?: string }[];
+    baseRevision: number;
+  }): Promise<unknown>;
   setModelIoFullRetentionEnabled?(enabled: boolean): void;
   /** 更新「编辑前必须读取」运行态；协议偏好同步对活跃 session 调用。 */
   setEditRequiresReadEnabled?(enabled: boolean): void;

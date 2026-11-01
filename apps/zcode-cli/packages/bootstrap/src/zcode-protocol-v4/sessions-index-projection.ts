@@ -99,6 +99,8 @@ export function deriveSessionSummary(
     ...(snapshot.goal ? { goalStatus: snapshot.goal.status } : {}),
     lastActivityAt: extra.lastActivityAt,
     ...(lastAssistantPreview ? { lastAssistantPreview } : {}),
+    // 只给 superagent 下发徽标字段，传统会话的 frame 与旧消费者完全不变。
+    ...(snapshot.config.agentMode === "superagent" ? { agentMode: "superagent" as const } : {}),
     createdAt: extra.createdAt,
   };
 }
@@ -124,6 +126,7 @@ function summariesEqual(a: SessionSummary, b: SessionSummary): boolean {
     a.goalStatus === b.goalStatus &&
     a.lastActivityAt === b.lastActivityAt &&
     a.lastAssistantPreview === b.lastAssistantPreview &&
+    a.agentMode === b.agentMode &&
     a.createdAt === b.createdAt
   );
 }

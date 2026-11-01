@@ -1,4 +1,5 @@
 import { requestVerificationReasons } from "../request-security-edition/verification-policy.js";
+import { AGENT_MODES } from "../agent-mode.js";
 import { zcodeProtocolTraceSchema } from "./trace.js";
 // Bot 反向回复的名字解析/待澄清结果与 App、CLI 使用同一严格 schema。
 export { channelReplyRequestSchema, channelReplyResultSchema } from "../channel-mention.js";
@@ -1944,6 +1945,8 @@ export const zcodeSessionCreateParamsSchema = z
     // 灰度 mode 随布尔同行下发（launch.md「On demand: activation」）：`onDemand` 让 CLI 把十个
     // 工具推迟到会话首次 `/workflow` 才注册；缺席 = 按布尔行事（alwaysOn），供旧 Host 配对。
     dynamicWorkflowMode: zcodeDynamicWorkflowModeSchema.optional(),
+    // 会话模式：缺省即 agent，供旧 Host 配对；superagent 由 CLI 侧装配路由会话。
+    agentMode: z.enum(AGENT_MODES).optional(),
   })
   .strict();
 export type ZCodeSessionCreateParams = z.infer<typeof zcodeSessionCreateParamsSchema>;
@@ -1964,6 +1967,8 @@ export const zcodeSessionResumeParamsSchema = z
     // 与 create 同语义；resume 不带会导致冷恢复丢工作流工具簇。
     dynamicWorkflowEnabled: z.boolean().optional(),
     dynamicWorkflowMode: zcodeDynamicWorkflowModeSchema.optional(),
+    // 冷恢复沿用创建时的模式；缺席按 agent 处理。
+    agentMode: z.enum(AGENT_MODES).optional(),
   })
   .strict();
 export type ZCodeSessionResumeParams = z.infer<typeof zcodeSessionResumeParamsSchema>;

@@ -27,6 +27,8 @@ import type { AgentRuntimeConfig, ActiveTurnInfo } from "../types.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 import { cloneModelSelection } from "../model-selection.js";
 import { applyRuntimeExecutionState } from "../execution-state.js";
+import { applyRuntimeAgentMode, readRuntimeAgentMode } from "../agent-mode.js";
+import type { SessionAgentMode } from "@zcode/contracts";
 
 import { mirrorSubagentInteractionEvent } from "../../subagent/tool-event-mirror.js";
 import { orderProviderVisibleToolContracts } from "../../tool/provider-visible-order.js";
@@ -45,6 +47,29 @@ export async function setExecutionState(
   traceContext?: TraceContext,
 ): Promise<void> {
   await applyRuntimeExecutionState(this, input, { source: "command", traceContext });
+}
+
+/** 会话模式只影响路由装配，不参与 turn 状态机与权限判定。 */
+export function getAgentMode(this: AgentRuntimeInternal): SessionAgentMode {
+  return readRuntimeAgentMode(this);
+}
+
+export async function setAgentMode(
+  this: AgentRuntimeInternal,
+  agentMode: SessionAgentMode,
+  traceContext?: TraceContext,
+): Promise<void> {
+  await applyRuntimeAgentMode(this, agentMode, { reason: "command", traceContext });
+}
+
+/** 冷恢复与创建期建立初始事实；同样落 entry 并发布事件，保证日志自足。 */
+export async function seedAgentMode(
+  this: AgentRuntimeInternal,
+  agentMode: SessionAgentMode,
+  reason: "create" | "resume" | "system",
+  traceContext?: TraceContext,
+): Promise<void> {
+  await applyRuntimeAgentMode(this, agentMode, { reason, traceContext });
 }
 
 export function updateConfig(

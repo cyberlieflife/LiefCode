@@ -1,5 +1,6 @@
 import type {
   CollaborationMode,
+  SessionAgentMode,
   Model,
   ModelInputMessage,
   ModelSelection,
@@ -77,6 +78,13 @@ export interface AgentRuntimeCoreMethods {
   grantPermissionFullAccess(interactionId: string, signal?: AbortSignal): Promise<string>;
   setExecutionState(
     input: { mode?: string; planEnabled?: boolean },
+    traceContext?: TraceContext,
+  ): Promise<void>;
+  getAgentMode(): SessionAgentMode;
+  setAgentMode(agentMode: SessionAgentMode, traceContext?: TraceContext): Promise<void>;
+  seedAgentMode(
+    agentMode: SessionAgentMode,
+    reason: "create" | "resume" | "system",
     traceContext?: TraceContext,
   ): Promise<void>;
   getSessionModelSelection(): ModelSelection | undefined;

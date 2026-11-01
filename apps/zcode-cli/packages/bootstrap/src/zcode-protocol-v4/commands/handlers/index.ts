@@ -12,6 +12,7 @@ import { sessionMgmtHandlers } from "./session-mgmt.js";
 import { selectionSideSessionHandlers } from "./selection-side-session.js";
 import { assistantFeedbackHandlers } from "./assistant-feedback.js";
 import { highspeedMetricsHandlers } from "./highspeed-metrics.js";
+import { superAgentHandlers } from "./superagent.js";
 
 export const NATIVE_HANDLERS = {
   ...sessionFlowHandlers,
@@ -25,6 +26,7 @@ export const NATIVE_HANDLERS = {
   ...fileRewindHandlers,
   ...assistantFeedbackHandlers,
   ...highspeedMetricsHandlers,
+  ...superAgentHandlers,
 } as const;
 
 export type NativeCommandType = keyof typeof NATIVE_HANDLERS;

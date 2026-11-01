@@ -1,0 +1,30 @@
+{
+  "name": "@zcode/superagent-sources",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "node ../../scripts/clean-dist.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run tests",
+    "lint": "oxlint src tests",
+    "lint:fix": "oxlint --write src tests"
+  },
+  "dependencies": {
+    "@zcode/superagent": "workspace:*",
+    "typescript": "^5.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "vitest": "^4.1.5"
+  }
+}

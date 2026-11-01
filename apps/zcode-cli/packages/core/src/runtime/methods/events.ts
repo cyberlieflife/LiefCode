@@ -1,5 +1,6 @@
 import type { WorkspaceId } from "@zcode/contracts";
 import { buildExecutionStateEntry, readRuntimeExecutionState } from "../execution-state.js";
+import { buildSuperAgentRouterEntry, readRuntimeAgentMode } from "../agent-mode.js";
 import {
   SESSION_ENTRY_TARGET_COMPLETION_VERIFICATION,
   SESSION_ENTRY_USER_INPUT_AUTO_RESOLUTION,
@@ -647,6 +648,14 @@ async function persistSession(
     await this.sessionStore.saveSessionEntry?.(
       buildExecutionStateEntry(this.sessionId, readRuntimeExecutionState(this)),
     );
+    // 只给 superagent 写 entry：传统会话保持零新增行，旧库与列表查询不受影响。
+    const initialAgentMode = readRuntimeAgentMode(this);
+    if (initialAgentMode === "superagent") {
+      phase = "session_agent_mode";
+      await this.sessionStore.saveSessionEntry?.(
+        buildSuperAgentRouterEntry(this.sessionId, initialAgentMode),
+      );
+    }
     // `/workflow` 作为首轮时激活先于落盘（launch.md「On demand: activation」），entry 在这里补写。
     await writeDynamicWorkflowActivationEntryIfActivated(this);
     this.sessionPersisted = true;

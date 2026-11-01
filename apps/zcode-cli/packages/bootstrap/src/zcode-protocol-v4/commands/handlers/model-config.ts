@@ -3,7 +3,7 @@
 // + applyRequestedSessionConfig（createSession.config 消费共用件）。
 // 每个命令组一个文件：handler 纯函数 (host, envelope) → CommandResult|undefined，
 // 决策逻辑直驱 core（app.setModel / app.setMode / runtime.emit*），不经旧协议 op。
-import type { CollaborationMode, ModelSelection } from "@zcode/contracts";
+import type { CollaborationMode, ModelSelection, SessionAgentMode } from "@zcode/contracts";
 import type {
   CommandEnvelope,
   CommandPayloadMap,
@@ -257,6 +257,11 @@ export async function applyRequestedSessionConfig(
     );
   }
 
+  // agentMode：草稿期只建立 runtime 事实；entry 在首次落盘时补写（events.ts persistSession）。
+  if (config.agentMode && config.agentMode !== record.app.getAgentMode()) {
+    await record.app.setAgentMode(config.agentMode);
+  }
+
   // followupMode：runtime 缺省即 queue（投影初值同），仅非缺省值需要显式写——
   // runtime.setFollowupMode 无同值守卫（无条件追加事件），显式传 "queue" 会产空转 delta。
   if (config.followupMode && config.followupMode !== "queue") {
@@ -264,4 +269,28 @@ export async function applyRequestedSessionConfig(
   }
 }
 
-export const modelConfigHandlers = { switchModelConfig, switchCollaborationMode };
+/**
+ * switchAgentMode：切换传统 Agent 与 SuperAgent 路由模式。
+ * 同值切换回 noop ACK；跨 workspace 已有路由器的拒绝由 app.setAgentMode 抛出，
+ * Phase 2 接入引擎后再补 endOpenTickets 的工单收口。
+ */
+async function switchAgentMode(
+  host: V4CommandCoreHost,
+  envelope: CommandEnvelope,
+): Promise<CommandResult | undefined> {
+  const payload = envelope.payload as CommandPayloadMap["switchAgentMode"];
+  const record = requireRecord(host, envelope.sessionId);
+  const agentMode = payload.agentMode as SessionAgentMode;
+  const previousAgentMode = record.app.getAgentMode();
+  if (previousAgentMode === agentMode) {
+    throw new V4CommandNoopError(CONFIG_UNCHANGED);
+  }
+  await record.app.setAgentMode(agentMode, { endOpenTickets: payload.endOpenTickets });
+  return undefined;
+}
+
+export const modelConfigHandlers = {
+  switchModelConfig,
+  switchCollaborationMode,
+  switchAgentMode,
+};

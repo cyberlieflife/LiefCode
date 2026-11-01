@@ -27,6 +27,8 @@ export interface V4ComposerDraft {
   /** 有合法 mode 表示已经初始化；没有模型仍是明确空态，不能按旧文本草稿补默认。 */
   mode?: SubmissionMode;
   planEnabled?: boolean;
+  /** 新任务草稿的会话模式；缺席按 agent，已有会话以 snapshot 为准。 */
+  agentMode?: "agent" | "superagent";
   modelSelection?: ModelSelection;
   updatedAt: number;
 }

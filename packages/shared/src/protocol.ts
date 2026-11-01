@@ -5,6 +5,7 @@ import type { ProviderFamilyConnectionSelectionSettings } from "./provider-famil
 import type { ZCodeProvider } from "./zcode-task-types-core.js";
 import type { WorkspacePurpose } from "./workspacePurpose.js";
 import type { DynamicWorkflowMode } from "./dynamic-workflow-feature.js";
+import type { AgentMode } from "./agent-mode.js";
 import type { EmbeddedBrowserViewportPreference } from "./browser-use/command-metadata.js";
 import type { AppToolSearchMode } from "./app-runtime-preferences.js";
 
@@ -344,6 +345,8 @@ export interface AppSettings {
    * 提供的模式；只在功能已提供时生效。选回提供的模式时删除该字段，未改动的安装继续跟随服务端翻转。
    */
   dynamicWorkflowMode?: DynamicWorkflowMode;
+  /** 新建会话的默认模式；缺失按 agent 处理，已存在的会话不受影响。 */
+  defaultSessionMode?: AgentMode;
   /** 已启用的内置 Agent CLI；UI 对外仍展示为“Install”，底层语义保持为启用内置能力。 */
   enabledBuiltinAgentCliProviders?: ZCodeProvider[];
   /** 设置页中每个 Provider Family 当前唯一的结构化连接选择。 */

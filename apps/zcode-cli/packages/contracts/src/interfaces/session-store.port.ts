@@ -39,6 +39,8 @@ export const SESSION_TASK_TYPES = [
   "workflow_child",
   "subagent_child",
   "nested_workflow_child",
+  /** SuperAgent 工单的执行会话；不出现在顶层任务列表。 */
+  "superagent_worker",
 ] as const;
 export type SessionTaskType = (typeof SESSION_TASK_TYPES)[number];
 
@@ -817,6 +819,8 @@ export const SESSION_ENTRY_WORKSPACE_FILE_REWIND = "runtime/workspace_file_rewin
 /** 动态工作流工具面已在本会话激活（docs/dynamic-workflow/launch.md「On demand: activation」）。 */
 export const SESSION_ENTRY_DYNAMIC_WORKFLOW_ACTIVATION =
   "runtime/dynamic_workflow_activation" as const;
+/** 会话模式与 SuperAgent 路由事实；缺席即传统 Agent（docs/superagent/010-session-mode.md）。 */
+export const SESSION_ENTRY_SUPERAGENT_ROUTER = "runtime/superagent_router" as const;
 
 export const SESSION_ENTRY_TYPES = [
   SESSION_ENTRY_TARGET_COMPLETION_VERIFICATION,
@@ -827,6 +831,7 @@ export const SESSION_ENTRY_TYPES = [
   SESSION_ENTRY_WORKSPACE_CHECKPOINT,
   SESSION_ENTRY_WORKSPACE_FILE_REWIND,
   SESSION_ENTRY_DYNAMIC_WORKFLOW_ACTIVATION,
+  SESSION_ENTRY_SUPERAGENT_ROUTER,
 ] as const;
 
 export type SessionEntryType = (typeof SESSION_ENTRY_TYPES)[number];

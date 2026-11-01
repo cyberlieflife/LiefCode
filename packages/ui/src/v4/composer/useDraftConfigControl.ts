@@ -98,6 +98,7 @@ export interface DraftConfigControl {
   handleDraftSelectModel: (modelProvider: string, model: string, reasoningLevel?: string) => void;
   handleDraftSelectThought: (thought: string) => void;
   handleDraftSwitchMode: (mode: string) => void;
+  handleDraftSwitchAgentMode: (agentMode: SessionConfigState["agentMode"]) => void;
 }
 
 interface ComposerState {
@@ -135,6 +136,9 @@ export function useDraftConfigControl(params: {
   const zcodeSessionService = useZCodeSessionService(workspacePath, null, workspaceIdentity);
   const { settings: sharedSettings } = useSettings();
   const appFollowupMode = resolveAppFollowupMode(sharedSettings);
+  // 新任务草稿未显式选择模式时跟随设置默认值；已有会话以自身投影为准。
+  const defaultAgentMode: SessionConfigState["agentMode"] =
+    sharedSettings?.defaultSessionMode ?? "agent";
   const scopeId = sessionId ?? V4_DRAFT_SCOPE_ROOT;
   const clientNamespace = useComposerClientNamespace();
   const draftProjectId = useZCodeSessionStore(
@@ -269,6 +273,11 @@ export function useDraftConfigControl(params: {
           ? undefined
           : draft.mode,
       planEnabled: draft.planEnabled ?? false,
+      // 草稿模式随下一次提交进入 createSession.config；已有会话由 snapshot 覆盖展示。
+      // 未显式选择时，新任务跟随设置默认值，避免预热会话先以 agent 建出来。
+      agentMode:
+        draft.agentMode ??
+        (currentState.initialization === "new-task" ? defaultAgentMode : undefined),
       modelSelection: effectiveSelection,
       provider: effectiveSelection?.providerId ?? "",
       model: effectiveSelection?.modelId ?? "",
@@ -277,6 +286,8 @@ export function useDraftConfigControl(params: {
     [
       draft.mode,
       draft.planEnabled,
+      draft.agentMode,
+      defaultAgentMode,
       effectiveSelection,
       currentState.initialization,
       currentState.observedConfig,
@@ -359,6 +370,7 @@ export function useDraftConfigControl(params: {
       draftConfigRef.current = {
         mode: next.mode,
         planEnabled: next.planEnabled ?? false,
+        agentMode: next.agentMode,
         modelSelection: selection,
         provider: selection?.providerId ?? "",
         model: selection?.modelId ?? "",
@@ -410,11 +422,14 @@ export function useDraftConfigControl(params: {
   const resolveInitialDraftConfig = useCallback((): Partial<SessionConfigState> | undefined => {
     if (!draftConfigRef.current.mode) return undefined;
     const config = { ...draftConfigRef.current };
+    if (!config.agentMode && stateRef.current.initialization === "new-task") {
+      config.agentMode = defaultAgentMode;
+    }
     if (appFollowupMode) {
       config.followupMode = appFollowupMode;
     }
     return config;
-  }, [appFollowupMode]);
+  }, [appFollowupMode, defaultAgentMode]);
 
   const updateComposerContent = useCallback(
     (content: Pick<V4ComposerDraft, "text" | "editorStateJson" | "mention">) => {
@@ -625,6 +640,13 @@ export function useDraftConfigControl(params: {
     [updateComposerDraft],
   );
 
+  const handleDraftSwitchAgentMode = useCallback(
+    (agentMode: SessionConfigState["agentMode"]) => {
+      updateComposerDraft((current) => ({ ...current, agentMode }));
+    },
+    [updateComposerDraft],
+  );
+
   return {
     modelSelectionRead,
     draftConfig,
@@ -638,6 +660,7 @@ export function useDraftConfigControl(params: {
     handleDraftSelectModel,
     handleDraftSelectThought,
     handleDraftSwitchMode,
+    handleDraftSwitchAgentMode,
   };
 }
 

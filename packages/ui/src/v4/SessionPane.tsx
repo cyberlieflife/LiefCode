@@ -34,6 +34,7 @@ import {
 } from "@zcode/shared";
 import { TID_CHAT_EMPTY, TID_V4_SESSION_PANE, testId } from "@zcode/shared/test-ids";
 import type {
+  AgentMode,
   ConversationShareAccessMode,
   GitChangeSourceId,
   HighspeedCardSnapshot,
@@ -168,6 +169,7 @@ import { projectSessionConfigToTaskConfigOptions } from "@/v4/composer/sessionCo
 import { useDraftRuntimeRebuildGate } from "@/v4/composer/useDraftRuntimeRebuildGate.js";
 import { useDraftModelReadinessGate } from "@/v4/composer/useDraftModelReadinessGate.js";
 import { useSettings } from "@/hooks/useSettingService.js";
+import { SuperAgentPanel } from "@/superagent/SuperAgentPanel.js";
 import { useZCodeStoreWithDefault } from "@/store/StoreProvider.js";
 import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
 import {
@@ -1762,6 +1764,7 @@ export function SessionPane({
     handleDraftSelectModel,
     handleDraftSelectThought,
     handleDraftSwitchMode,
+    handleDraftSwitchAgentMode,
     promoteComposerDraft,
     captureAcceptedModelSelection,
     replaceComposerDraft,
@@ -4389,8 +4392,32 @@ export function SessionPane({
         );
         requireAcceptedConfigAck("setFollowupMode", ack);
       }
+      // 预热会话可能早于设置变更建出来；发送前把模式补齐。
+      // 失败不阻断发送：模式是可后续切换的软配置，不能让运行时不可用卡死首条消息。
+      if (
+        desiredConfig.agentMode &&
+        desiredConfig.agentMode !== (projectedConfig?.agentMode ?? "agent")
+      ) {
+        const ack = await dispatchConfigCas(
+          "switchAgentMode",
+          { agentMode: desiredConfig.agentMode },
+          { targetSessionId },
+        );
+        if (ack?.status !== "accepted" && ack?.status !== "noop" && ack?.status !== "duplicate") {
+          logger.warn("[v4-pane] 首发前同步会话模式失败", {
+            agentMode: desiredConfig.agentMode,
+            status: ack?.status ?? "missing-ack",
+            reasonCode: ack?.reasonCode ?? null,
+          });
+          toast(
+            (ack?.message ?? "").startsWith("superagent_router_exists")
+              ? intl.formatMessage({ id: "chat.toolbar.agentMode.routerExists" })
+              : intl.formatMessage({ id: "chat.toolbar.agentMode.switchFailed" }),
+          );
+        }
+      }
     },
-    [appFollowupMode, dispatchConfigCas, draftConfigRef],
+    [appFollowupMode, dispatchConfigCas, draftConfigRef, intl],
   );
   ensureDraftPrewarmConfigBeforeSendRef.current = ensureDraftPrewarmConfigBeforeSend;
 
@@ -4557,6 +4584,46 @@ export function SessionPane({
       handleDraftSwitchMode(mode);
     },
     [handleDraftSwitchMode],
+  );
+
+  /**
+   * 会话模式切换：草稿只改下一次提交的配置；已存在会话走 CAS 命令，
+   * 由 CLI 落 session_entry 并发布 SessionAgentModeChanged；投影回来后才更新界面。
+   */
+  const handleSwitchAgentMode = useCallback(
+    (agentMode: AgentMode) => {
+      const current = snapshotRef.current;
+      if (!sessionId || !runtimeReady || current?.sessionId !== sessionId) {
+        handleDraftSwitchAgentMode(agentMode);
+        return;
+      }
+      if ((current.config.agentMode ?? "agent") === agentMode) return;
+      void dispatchConfigCas("switchAgentMode", { agentMode }, { targetSessionId: sessionId }).then(
+        (ack) => {
+          if (ack?.status === "accepted" || ack?.status === "noop" || ack?.status === "duplicate") {
+            return;
+          }
+          const message = ack?.message ?? "";
+          toast(
+            message.startsWith("superagent_router_exists")
+              ? intl.formatMessage({ id: "chat.toolbar.agentMode.routerExists" })
+              : intl.formatMessage({ id: "chat.toolbar.agentMode.switchFailed" }),
+          );
+        },
+      );
+    },
+    [dispatchConfigCas, handleDraftSwitchAgentMode, intl, runtimeReady, sessionId],
+  );
+
+  // 面板 props 需要稳定身份：轮询与操作都复用同一个 dispatch，避免 effect 反复重建。
+  // 草稿没有绑定 sessionId 时指向预热会话，否则面板会一直停在读取中。
+  const superAgentSessionId = sessionId ?? prewarmSessionId;
+  const superAgentDispatch = useCallback(
+    (type: string, payload: Record<string, unknown>) =>
+      dispatchConfigCas(type as CommandType, payload, {
+        ...(superAgentSessionId ? { targetSessionId: superAgentSessionId } : {}),
+      }),
+    [dispatchConfigCas, superAgentSessionId],
   );
 
   // context usage 面板的压缩入口（命令文本 = "/compact"，复用 slash 解析路径）。
@@ -5488,6 +5555,8 @@ export function SessionPane({
       onSelectModel={handleSelectModel}
       onSelectThought={handleSelectThought}
       onSwitchMode={handleSwitchMode}
+      agentMode={snapshot?.config.agentMode ?? draftConfig?.agentMode ?? "agent"}
+      onSwitchAgentMode={handleSwitchAgentMode}
       onOpenRunningBackgroundWorks={
         sessionId && runningBackgroundWorkCount > 0 ? handleOpenRunningBackgroundWorks : undefined
       }
@@ -5733,6 +5802,11 @@ export function SessionPane({
           workspaceIdentity={workspaceIdentity}
           remoteSessionId={remoteSessionId}
           archivedTaskIds={archivedTaskIds}
+        />
+        <SuperAgentPanel
+          agentMode={snapshot?.config.agentMode ?? "agent"}
+          sessionId={superAgentSessionId}
+          dispatch={superAgentDispatch}
         />
         {effectiveDropTargetController?.active ? (
           <div className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-accent/55 backdrop-blur-sm">

@@ -3158,6 +3158,14 @@ const zhCN: Record<string, string> = {
     "除了 /workflow 命令，模型也会根据你的意图主动运行工作流。",
   "settings.dynamicWorkflow.defaultTag": "默认",
   "settings.dynamicWorkflow.saveError": "保存动态工作流设置失败",
+  "settings.defaultSessionMode": "默认会话模式",
+  "settings.defaultSessionModeDescription":
+    "新建会话时使用的模式；已有会话保留自己的模式，可在输入框中切换。",
+  "settings.defaultSessionMode.option.agent": "传统 Agent",
+  "settings.defaultSessionMode.option.superagent": "SuperAgent",
+  "settings.defaultSessionMode.guide": "使用指南",
+  "settings.defaultSessionMode.guideClose": "关闭",
+  "settings.defaultSessionMode.saveError": "保存默认会话模式失败",
   "settings.modelIoFullRetention": "完整保留模型 I/O",
   "settings.modelIoFullRetentionDescription":
     "保留完整的模型请求和响应，不自动压缩、限制大小或删除旧记录。",
@@ -5655,6 +5663,11 @@ const zhCN: Record<string, string> = {
   "chat.modelSwitch.contextWindowGuard.stillTooLarge":
     "压缩完成后，当前会话已使用的上下文仍大于目标模型预留最大输出后的可用上下文，模型切换已取消。",
   "chat.toolbar.mode.label": "切换模式",
+  "chat.toolbar.agentMode.label": "会话模式",
+  "chat.toolbar.agentMode.agent": "Agent",
+  "chat.toolbar.agentMode.superagent": "SuperAgent",
+  "chat.toolbar.agentMode.switchFailed": "切换会话模式失败，请稍后重试",
+  "chat.toolbar.agentMode.routerExists": "当前 workspace 已有 SuperAgent 会话，请先把它切回传统 Agent",
   // CUA 输入框常驻入口按钮
   "chat.toolbar.computerUse.label": "电脑操作",
   "chat.toolbar.computerUse.tooltip.idle": "电脑操作空闲——首次使用时自动启动",

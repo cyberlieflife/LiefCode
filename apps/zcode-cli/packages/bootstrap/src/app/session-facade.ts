@@ -16,6 +16,8 @@ import {
   type ProjectId,
   type SessionId,
   type SessionStorePort,
+  SessionEventType,
+  createSessionEvent,
   type SupportedLocale,
   type TraceContext,
   type TurnInputIntentMetadata,
@@ -47,12 +49,22 @@ import {
 } from "./provider-registry-selection.js";
 import { isClosableSessionStore } from "./session-store.js";
 import { createSubagentObservation } from "./subagent-observation.js";
+import {
+  claimSuperAgentRouter,
+  registerSuperAgentRouterDowngrade,
+  releaseSuperAgentRouter,
+  transferSuperAgentRouter,
+} from "./superagent-router-registry.js";
 import type { PrepareUserExecutionBoundary, ZCodeApp } from "./types.js";
 import type { CliDefaultSelection } from "./cli-default-selection.js";
 
 type SessionFacade = Pick<
   ZCodeApp,
   | "readBackgroundBashOutput"
+  | "getSuperAgentSnapshot"
+  | "superAgentAction"
+  | "saveSuperAgentSettings"
+  | "saveSuperAgentPrompts"
   | "cancelBackgroundTask"
   | "clearTarget"
   | "close"
@@ -68,6 +80,8 @@ type SessionFacade = Pick<
   | "testModelConnectivity"
   | "forkFromCheckpoint"
   | "getMode"
+  | "getAgentMode"
+  | "setAgentMode"
   | "getModel"
   | "getCurrentModelOption"
   | "getModelOption"
@@ -103,6 +117,26 @@ type SessionFacade = Pick<
 
 const DEFAULT_SESSION_RESOURCE_CLOSE_TIMEOUT_MS = 6_000;
 
+/** 面板需要的窄接口：facade 只做生命周期与转发，不复制引擎逻辑。 */
+export interface SuperAgentRuntimePort {
+  start(): void;
+  stop(): Promise<void>;
+  snapshot(): unknown;
+  saveSettings(block: "policy" | "executor" | "sources", value: unknown, revision: number): unknown;
+  savePrompts(input: {
+    sections: { communication: string; ticketScope: string; delivery: string };
+    overrides: { part: string; text: string; baseText?: string }[];
+    baseRevision: number;
+  }): unknown;
+  pause(paused: boolean): void;
+  ticketAction(ticketId: string, action: "retry" | "stop"): void;
+  reevaluate(triggerId: string): void;
+  dismiss(decisionId: string): void;
+  unsubscribe(threadKey: string): void;
+  note(ticketId: string, text: string): void;
+  requestStatus(ticketId: string): void;
+}
+
 interface SessionResourceCloseInput {
   beginShutdown: () => void;
   closeBrowserSession: () => Promise<void>;
@@ -116,6 +150,12 @@ interface SessionResourceCloseInput {
 
 interface CreateSessionFacadeDeps {
   cliDefaultSelection?: CliDefaultSelection;
+  /** SuperAgent 运行时由 create-app 装配；缺席时转换仍可落模式，但面板没有数据。 */
+  createSuperAgentRuntime?: (input: {
+    sessionId: string;
+    workspaceKey: string;
+    relay: (text: string) => void;
+  }) => SuperAgentRuntimePort;
   /**
    * 停下本会话拥有的 dwf run：
    * run service 的 `close()`。缺席即本装配没有 dwf 端口（journal 窄化失败、测试装配）。
@@ -148,6 +188,70 @@ interface CreateSessionFacadeDeps {
 
 export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacade {
   let closePromise: Promise<void> | undefined;
+  let superAgentRuntime: SuperAgentRuntimePort | undefined;
+  const ensureSuperAgentRuntime = (): SuperAgentRuntimePort => {
+    if (superAgentRuntime) return superAgentRuntime;
+    if (!deps.createSuperAgentRuntime) {
+      throw new Error("superagent runtime is not available in this build");
+    }
+    superAgentRuntime = deps.createSuperAgentRuntime({
+      sessionId: deps.sessionId,
+      workspaceKey: deps.workingDirectory,
+      relay: (text) =>
+        deps.runtime
+          .appendEvent(
+            createSessionEvent(
+              SessionEventType.SystemMessage,
+              deps.sessionId,
+              { type: "init", content: text },
+              { traceId: deps.traceContext.traceId },
+            ),
+            deps.traceContext,
+          )
+          .catch(() => undefined),
+    });
+    return superAgentRuntime;
+  };
+  // 交接回调：旧路由器没有开放工单时才允许让位，避免工单失去归属。
+  const downgradeSuperAgentRouter = async (): Promise<boolean> => {
+    const snapshot = superAgentRuntime?.snapshot() as
+      | { tickets?: { open?: boolean }[] }
+      | undefined;
+    if (snapshot?.tickets?.some((ticket) => ticket.open === true)) return false;
+    const activeRuntime = superAgentRuntime;
+    superAgentRuntime = undefined;
+    releaseSuperAgentRouter(deps.projectID, deps.sessionId);
+    if (activeRuntime) {
+      try {
+        await activeRuntime.stop();
+      } catch (error: unknown) {
+        deps.logger.warn("SuperAgent runtime failed to stop during handover", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    await deps.runtime.setAgentMode("agent", deps.traceContext);
+    return true;
+  };
+  // 冷恢复：模式 entry 已经 seed 回 runtime，这里把引擎一并拉起，避免面板空转。
+  if (
+    typeof deps.runtime.getAgentMode === "function" &&
+    deps.runtime.getAgentMode() === "superagent"
+  ) {
+    try {
+      claimSuperAgentRouter(deps.projectID, deps.sessionId);
+      registerSuperAgentRouterDowngrade(
+        deps.projectID,
+        deps.sessionId,
+        downgradeSuperAgentRouter,
+      );
+      ensureSuperAgentRuntime().start();
+    } catch (error: unknown) {
+      deps.logger.warn?.("SuperAgent runtime failed to start on resume", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
   let currentLocale = resolveLocale(deps.configResult.config.ui.locale);
   // App-Provided Tools：本会话当前登记在 ToolRegistry 里的模型侧名字（整体替换时先注销）。
   let appProvidedToolNames: string[] = [];
@@ -291,6 +395,18 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
         // 关闭入口先阻止新调度并取消在飞 Memory Extraction，再等待取消链路收口。
         deps.runtime.beginShutdown();
         await deps.runtime.drainMemoryExtractions(60_000);
+        // SuperAgent 引擎的轮询与 effects 也归本 App：先停它，再关资源。
+        if (superAgentRuntime) {
+          const activeRuntime = superAgentRuntime;
+          superAgentRuntime = undefined;
+          try {
+            await activeRuntime.stop();
+          } catch (error: unknown) {
+            deps.logger.warn?.("Closing superagent runtime failed; continuing to close resources", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
         // 引擎归本 App 所有，所以关闭要主动停下它。
         // 位置是两个约束夹出来的：在 beginShutdown **之后**，结算带出的终态通知才会被丢掉
         // （background-notifications.ts 在 shuttingDown 时不入队），不会把正在关闭的会话的模型
@@ -640,6 +756,120 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
         previousMode,
         traceId: deps.traceContext.traceId,
       };
+    },
+    getAgentMode: () => deps.runtime.getAgentMode(),
+    setAgentMode: async (agentMode, options) => {
+      const previousAgentMode = deps.runtime.getAgentMode();
+      if (previousAgentMode === agentMode) {
+        return { agentMode, previousAgentMode, traceId: deps.traceContext.traceId };
+      }
+      if (agentMode === "superagent") {
+        let claim = claimSuperAgentRouter(deps.projectID, deps.sessionId);
+        if (!claim.ok) {
+          // 旧路由器没有开放工单时自动交接；有工单必须由用户先处理。
+          const transferred = await transferSuperAgentRouter(deps.projectID, deps.sessionId);
+          if (transferred) {
+            claim = claimSuperAgentRouter(deps.projectID, deps.sessionId);
+          }
+          if (!claim.ok) {
+            throw new Error(`superagent_router_exists:${claim.sessionId}`);
+          }
+        }
+        // 先落模式：引擎启动失败（数据库不可用等）不能连带阻断用户切换。
+        await deps.runtime.setAgentMode(agentMode, deps.traceContext);
+        registerSuperAgentRouterDowngrade(
+          deps.projectID,
+          deps.sessionId,
+          downgradeSuperAgentRouter,
+        );
+        try {
+          ensureSuperAgentRuntime().start();
+        } catch (error: unknown) {
+          deps.logger.warn("SuperAgent runtime failed to start after mode switch", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      } else {
+        // Phase 1 没有工单状态；options.endOpenTickets 在引擎接入后才会消费。
+        void options?.endOpenTickets;
+        const activeRuntime = superAgentRuntime;
+        superAgentRuntime = undefined;
+        releaseSuperAgentRouter(deps.projectID, deps.sessionId);
+        if (activeRuntime) {
+          try {
+            await activeRuntime.stop();
+          } catch (error: unknown) {
+            deps.logger.warn("SuperAgent runtime failed to stop on downgrade", {
+              error: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+        await deps.runtime.setAgentMode(agentMode, deps.traceContext);
+      }
+      deps.logger.info("Session agent mode updated", {
+        ...traceContextToLogContext(deps.traceContext),
+        agentMode,
+        event: "session.agent_mode.updated",
+        module: "bootstrap",
+        previousAgentMode,
+        status: "completed",
+      });
+      return {
+        agentMode: deps.runtime.getAgentMode(),
+        previousAgentMode,
+        traceId: deps.traceContext.traceId,
+      };
+    },
+    getSuperAgentSnapshot: () => superAgentRuntime?.snapshot() ?? null,
+    superAgentAction: async (payload) => {
+      const runtime = ensureSuperAgentRuntime();
+      switch (payload.action) {
+        case "pause":
+          runtime.pause(true);
+          break;
+        case "resume":
+          runtime.pause(false);
+          break;
+        case "ticket.retry":
+          if (!payload.ticketId) throw new Error("ticketId is required");
+          runtime.ticketAction(payload.ticketId, "retry");
+          break;
+        case "ticket.stop":
+          if (!payload.ticketId) throw new Error("ticketId is required");
+          runtime.ticketAction(payload.ticketId, "stop");
+          break;
+        case "ticket.status":
+          if (!payload.ticketId) throw new Error("ticketId is required");
+          runtime.requestStatus(payload.ticketId);
+          break;
+        case "reevaluate":
+          if (!payload.triggerId) throw new Error("triggerId is required");
+          runtime.reevaluate(payload.triggerId);
+          break;
+        case "dismiss":
+          if (!payload.decisionId) throw new Error("decisionId is required");
+          runtime.dismiss(payload.decisionId);
+          break;
+        case "unsubscribe":
+          if (!payload.threadKey) throw new Error("threadKey is required");
+          runtime.unsubscribe(payload.threadKey);
+          break;
+        case "note":
+          if (!payload.ticketId || !payload.text) throw new Error("ticketId and text are required");
+          runtime.note(payload.ticketId, payload.text);
+          break;
+      }
+      return runtime.snapshot();
+    },
+    saveSuperAgentSettings: async (payload) => {
+      const runtime = ensureSuperAgentRuntime();
+      runtime.saveSettings(payload.block, payload.value, payload.revision);
+      return runtime.snapshot();
+    },
+    saveSuperAgentPrompts: async (payload) => {
+      const runtime = ensureSuperAgentRuntime();
+      runtime.savePrompts(payload);
+      return runtime.snapshot();
     },
     setModel: async (modelId, options) => {
       // 配置命令已提交完整 Selection；转成字符串会丢档位。先整体校验再一次

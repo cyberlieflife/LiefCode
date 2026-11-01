@@ -3,7 +3,9 @@ import { SqliteSessionStore } from "@zcode/adapters/storage";
 import { resolvePath, type ConfigResult } from "@zcode/adapters/config";
 import {
   SESSION_ENTRY_MODEL_SELECTION,
+  SESSION_ENTRY_SUPERAGENT_ROUTER,
   parseModelSelectionValue,
+  type SessionAgentMode,
   type SessionId,
   type SessionStorePort,
   type CollaborationMode,
@@ -68,6 +70,24 @@ export async function readSessionModelSelection(
     );
   }
   return undefined;
+}
+
+/** 读取会话模式事实；entry 缺席或结构不合法都按传统 Agent 处理。 */
+export async function readSessionAgentMode(
+  store: Pick<SessionStorePort, "sessionEntries">,
+  sessionID: SessionId,
+): Promise<SessionAgentMode> {
+  if (!store.sessionEntries) return "agent";
+  const entries = await store.sessionEntries({
+    sessionID,
+    type: SESSION_ENTRY_SUPERAGENT_ROUTER,
+  });
+  const data = entries.at(-1)?.data;
+  if (data && typeof data === "object" && !Array.isArray(data)) {
+    const mode = (data as Record<string, unknown>).agentMode;
+    if (mode === "superagent") return "superagent";
+  }
+  return "agent";
 }
 
 /**

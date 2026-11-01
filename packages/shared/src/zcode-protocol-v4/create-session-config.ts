@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AGENT_MODES } from "../agent-mode.js";
 import { modelSelectionSchema } from "../model-selection.js";
 
 export const createSessionRequestedConfigSchema = z.object({
@@ -12,4 +13,5 @@ export const createSessionRequestedConfigSchema = z.object({
   // 会把“没传 mode”误变成“请求切回 build”，覆盖 workspace 默认 yolo。
   mode: z.string().optional(),
   planEnabled: z.boolean().optional(),
+  agentMode: z.enum(AGENT_MODES).optional(),
 });

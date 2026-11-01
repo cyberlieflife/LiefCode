@@ -1739,6 +1739,11 @@ export function createConversationV4Gateway(
               ?.reasoning?.levels.map((level) => level.value) ?? [])
           : [],
         mode: record.app.getMode(),
+        // 会话模式是 runtime 真值；恢复时事件可能早于 publisher 建立，必须由种子兜底。
+        // 旧 record 的 app 若没有该能力，宁可不种子也不能打断整次 config 种子。
+        ...(typeof record.app.getAgentMode === "function"
+          ? { agentMode: record.app.getAgentMode() }
+          : {}),
         planEnabled: record.app.runtime.getPlanEnabled(),
         ...(record.app.runtime.lastPermissionGrantId
           ? { permissionGrant: { interactionId: record.app.runtime.lastPermissionGrantId } }

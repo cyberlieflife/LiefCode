@@ -5,7 +5,14 @@ import { tmpdir } from "node:os";
 import {
   createInMemorySessionEventStore,
   createNodeToolArtifactStore,
+  SqliteSuperAgentStore,
 } from "@zcode/adapters/storage";
+import { nodeCommandRunner } from "@zcode/superagent-sources";
+import {
+  SuperAgentExecutor,
+  SuperAgentRuntime,
+  createSuperAgentWorkerHost,
+} from "./superagent/index.js";
 import { createNodeLoggerFactory } from "@zcode/adapters/logging";
 import { createConfig, resolvePath } from "@zcode/adapters/config";
 import {
@@ -66,6 +73,7 @@ import {
   asLocalSettingStore,
   openStartupSessionStore,
   readProjectPermissionMode,
+  readSessionAgentMode,
   readSessionModelSelection,
 } from "./session-store.js";
 import { createWorkflowFacade } from "./workflow-facade.js";
@@ -548,6 +556,11 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           traceContext: resumeTraceContext,
         });
         await runtime.activatePausedTargetAfterResume(resumeTraceContext);
+        // 模式是会话持久事实：旧会话无 entry 时读回 agent，seed 不会产事件。
+        if (sessionStore) {
+          const agentMode = await readSessionAgentMode(sessionStore, sessionId);
+          await runtime.seedAgentMode(agentMode, "resume", resumeTraceContext);
+        }
         resumePrepared = true;
         return { ...result, modelSelection };
       } finally {
@@ -975,8 +988,80 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       traceContext,
       workingDirectory,
     });
+    // SuperAgent 运行时：会话切到 superagent 时才由 facade 启动。
+    // 状态写入独立库，Worker 会话复用 workflow child 工厂（同一份权限与工具装配）。
+    const superAgentDatabasePath = join(storageRoot, "cli", "superagent.sqlite");
+    const createSuperAgentRuntime = (input: {
+      sessionId: string;
+      workspaceKey: string;
+      relay: (text: string) => void;
+    }): SuperAgentRuntime => {
+      const store = new SqliteSuperAgentStore({ dbPath: superAgentDatabasePath });
+      const host = createSuperAgentWorkerHost({
+        maxWorkers: () => store.loadSettings()?.executor.maxWorkers ?? 2,
+        prepareCommand: () => store.loadSettings()?.executor.prepareCommand,
+        permissionMode: () => "yolo",
+        logger: {
+          warn: (event, data) => logger.warn(event, data as never),
+        },
+        createRuntime: ({ childSessionId, workingDirectory: workerCwd, label, permissionMode }) => {
+          const runtime = createScriptWorkflowAgentRuntime({
+            childSessionId,
+            configOverrides: {
+              workingDirectory: workerCwd,
+              taskType: "superagent_worker",
+              ...workflowActorToolPolicy(),
+              ...workflowActorPermissionPolicy(permissionMode as "yolo"),
+            },
+            deps: {
+              agentTelemetry: modelTelemetry.agentExecution,
+              appOptions: options,
+              appVersion,
+              artifactStore,
+              configResult,
+              fileSystemPort,
+              httpClientPort,
+              imageProcessorPort,
+              logger,
+              mcpPort,
+              modelFactory,
+              permissionService,
+              pluginSkillRoots: pluginOutcome.skillRoots,
+              runtime: getRuntime(),
+              runtimeConfig,
+              sessionId,
+              sessionStore,
+              storageRoot,
+              workingDirectory,
+            },
+            request: { opts: { label, agentType: "superagent-worker" } } as never,
+            traceContext,
+            interactionDescription: label,
+          });
+          return {
+            executeTurn: (text: string) => runtime.executeTurn(text),
+            beginShutdown: () => runtime.beginShutdown(),
+          };
+        },
+      });
+      return new SuperAgentRuntime({
+        store,
+        workspaceKey: input.workspaceKey,
+        ownerId: `${process.pid}:${input.sessionId}`,
+        executionRoot: join(storageRoot, "cli", "superagent", "work"),
+        runner: nodeCommandRunner,
+        relay: input.relay,
+        executor: new SuperAgentExecutor(host),
+        logger: {
+          info: (event, data) => logger.info(event, data as never),
+          warn: (event, data) => logger.warn(event, data as never),
+        },
+      });
+    };
+
     const sessionFacade = createSessionFacade({
       cliDefaultSelection,
+      createSuperAgentRuntime,
       // App 关闭时停下本会话拥有的 dwf run：
       // 引擎活在本 App 的闭包里，关掉 App 而不停它，journal 行会停在 running 等下一次孤儿收敛。
       ...(dynamicWorkflowRunPort === undefined

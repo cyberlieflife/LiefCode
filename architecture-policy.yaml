@@ -947,3 +947,22 @@ exceptions:
     paths:
       - apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/sessions-index-fanout-throttle.ts
     reason: sessions-index 高频事件节流从网关拆出的独立调度文件，bootstrap 目录尚未登记受管模块；为单个调度文件建立模块边界需要单独的架构重构。
+  - id: superagent-session-mode-unmanaged-files
+    rule: unmanaged-new-file
+    paths:
+      - packages/shared/src/agent-mode.ts
+      - packages/shared/src/zcode-protocol-v4/create-session-config.ts
+      - packages/shared/src/zcode-protocol-v4/superagent.ts
+      - packages/ui/src/settings/DefaultSessionModeSetting.tsx
+      - packages/ui/src/v4/composer/V4ComposerAgentModeControl.tsx
+      - packages/ui/src/superagent/**
+      - apps/zcode-cli/packages/core/src/runtime/agent-mode.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/superagent-router-registry.ts
+      - apps/zcode-cli/packages/bootstrap/src/app/superagent/**
+      - apps/zcode-cli/packages/bootstrap/src/zcode-protocol-v4/commands/handlers/superagent.ts
+      - apps/zcode-cli/packages/bootstrap/tests/superagent-router-registry.test.ts
+      - apps/zcode-cli/packages/superagent/**
+      - apps/zcode-cli/packages/superagent-sources/**
+      - apps/zcode-cli/packages/adapters/src/storage/superagent-store/**
+      - apps/zcode-cli/packages/adapters/tests/superagent-store.test.ts
+    reason: SuperAgent 的领域包、Source 包、独立存储、bootstrap 装配与面板分属 shared、ui 与 zcode-cli 的未受管目录；本次按路径登记，整体接管这些目录需要单独的模块边界重构。

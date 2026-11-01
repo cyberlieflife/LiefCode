@@ -13,6 +13,7 @@ import { modelExecutionSchema } from "../model-execution.js";
 import { submissionModeSchema } from "./submission.js";
 import { botGroupInputSourceSchema, zcodeAutomationBotDeliveryTargetSchema } from "../bots.js";
 import { DYNAMIC_WORKFLOW_MODES } from "../dynamic-workflow-feature.js";
+import { AGENT_MODES } from "../agent-mode.js";
 import {
   amendWorkflowRunSettingsPayloadSchema,
   amendWorkflowRunSettingsResultSchema,
@@ -23,6 +24,13 @@ import {
   workspaceHookTrustRevokeTargetSchema,
   requestWorkspaceHookReviewTargetSchema,
 } from "./workspace-hook-review.js";
+import {
+  superAgentActionPayloadSchema,
+  superAgentQueryPayloadSchema,
+  superAgentSavePromptsPayloadSchema,
+  superAgentSaveSettingsPayloadSchema,
+  superAgentSnapshotSchema,
+} from "./superagent.js";
 import {
   zcodeBrowserAmbientContextSchema,
   zcodeProtocolMcpServerSchema,
@@ -261,6 +269,11 @@ export const commandPayloadSchemas = {
   switchCollaborationMode: z.object({
     mode: z.enum(["build", "edit", "plan", "yolo", "guarded"]),
   }),
+  // 会话模式切换：agent <-> superagent。降级遇到开放工单时需显式要求一并结束。
+  switchAgentMode: z.object({
+    agentMode: z.enum(AGENT_MODES),
+    endOpenTickets: z.boolean().optional(),
+  }),
   setFollowupMode: z.object({ mode: z.enum(["queue", "guide"]) }),
   pauseGoal: z.object({}),
   resumeGoal: z.object({}),
@@ -288,6 +301,11 @@ export const commandPayloadSchemas = {
   // 词表见 workflow-run-settings-command.ts；能力缺席 → V4CapabilityUnsupportedError。
   amendWorkflowRunSettings: amendWorkflowRunSettingsPayloadSchema,
   renameSession: z.object({ title: z.string() }),
+  // SuperAgent 面板：查询与操作都走同一会话命令面，避免第二条管理通道。
+  superAgentQuery: superAgentQueryPayloadSchema,
+  superAgentAction: superAgentActionPayloadSchema,
+  superAgentSaveSettings: superAgentSaveSettingsPayloadSchema,
+  superAgentSavePrompts: superAgentSavePromptsPayloadSchema,
   deleteSession: z.object({}),
   discardSharedContext: z.object({ contextId: z.string().trim().min(1) }).strict(),
 } as const;
@@ -325,6 +343,7 @@ export const COMMANDS_REQUIRING_BASE_REVISION: ReadonlySet<CommandType> = new Se
   "setAutoDrain",
   "switchModelConfig",
   "switchCollaborationMode",
+  "switchAgentMode",
   "setFollowupMode",
   "pauseGoal",
   "resumeGoal",
@@ -436,6 +455,10 @@ export const commandResultSchema = z.discriminatedUnion("type", [
     delivery: z.enum(["startNow", "queue", "guide"]),
     inputId: z.string(),
     messageId: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("superAgent"),
+    snapshot: superAgentSnapshotSchema,
   }),
   z.object({
     // restart discarded 过去只返回一个无差别 fault，renderer 无法区分

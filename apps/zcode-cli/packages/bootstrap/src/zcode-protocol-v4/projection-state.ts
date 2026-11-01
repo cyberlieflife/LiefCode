@@ -70,6 +70,7 @@ export function createInitialConversationSnapshot(
       thoughtLevels: [],
       followupMode: "queue",
       mode: "build",
+      agentMode: "agent",
     },
     modelTransition: null,
     usage: {

@@ -36,6 +36,7 @@ import { useZCodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalServices } from "@/hooks/useServices.js";
 import { ProactiveSuggestionsSetting } from "@/settings/ProactiveSuggestionsSetting.js";
 import { DynamicWorkflowModeSetting } from "@/settings/DynamicWorkflowModeSetting.js";
+import { DefaultSessionModeSetting } from "@/settings/DefaultSessionModeSetting.js";
 import { normalizeInterfaceMode, type InterfaceMode } from "@/lib/interfaceMode.js";
 import {
   createSettingsPageConfig,
@@ -862,6 +863,8 @@ export function GeneralSectionContent({
         />
         {/* docs/dynamic-workflow/launch.md「The user's choice」：服务端未提供时整行不渲染。 */}
         {hasServices ? <DynamicWorkflowModeSetting /> : null}
+        {/* 新建会话的默认模式；已有会话按自己的持久化模式加载。 */}
+        <DefaultSessionModeSetting />
         <SettingsRow
           label={intl.formatMessage({ id: "settings.modelIoFullRetention" })}
           description={intl.formatMessage({

@@ -3368,6 +3368,14 @@ const enUS: Record<string, string> = {
     "You can type /workflow, and the model can also start a workflow on its own when your request calls for one.",
   "settings.dynamicWorkflow.defaultTag": "Default",
   "settings.dynamicWorkflow.saveError": "Could not save the dynamic workflow setting",
+  "settings.defaultSessionMode": "Default session mode",
+  "settings.defaultSessionModeDescription":
+    "Mode used for new sessions. Existing sessions keep their own mode and can switch it in the composer.",
+  "settings.defaultSessionMode.option.agent": "Classic agent",
+  "settings.defaultSessionMode.option.superagent": "SuperAgent",
+  "settings.defaultSessionMode.guide": "Guide",
+  "settings.defaultSessionMode.guideClose": "Close",
+  "settings.defaultSessionMode.saveError": "Could not save the default session mode",
   "settings.modelIoFullRetention": "Keep complete model I/O",
   "settings.modelIoFullRetentionDescription":
     "Keep complete model requests and responses without compression, size limits, or automatic deletion.",
@@ -6031,6 +6039,11 @@ const enUS: Record<string, string> = {
   "chat.modelSwitch.contextWindowGuard.stillTooLarge":
     "After compression, the context used by this conversation is still larger than the target model's available context after reserving maximum output. Model switching was canceled.",
   "chat.toolbar.mode.label": "Switch mode",
+  "chat.toolbar.agentMode.label": "Session mode",
+  "chat.toolbar.agentMode.agent": "Agent",
+  "chat.toolbar.agentMode.superagent": "SuperAgent",
+  "chat.toolbar.agentMode.switchFailed": "Could not switch the session mode. Try again.",
+  "chat.toolbar.agentMode.routerExists": "This workspace already has a SuperAgent session. Switch it back to Agent first.",
   // CUA composer entry button
   "chat.toolbar.computerUse.label": "Computer Use",
   "chat.toolbar.computerUse.tooltip.idle":

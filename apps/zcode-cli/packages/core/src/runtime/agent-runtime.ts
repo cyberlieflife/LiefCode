@@ -19,6 +19,7 @@ import {
 } from "./deps.js";
 import type {
   CollaborationMode,
+  SessionAgentMode,
   Logger,
   BackgroundTaskCancelResult,
   SessionEvent,
@@ -412,6 +413,13 @@ export interface AgentRuntime {
   grantPermissionFullAccess(interactionId: string, signal?: AbortSignal): Promise<string>;
   setExecutionState(
     input: { mode?: string; planEnabled?: boolean },
+    traceContext?: TraceContext,
+  ): Promise<void>;
+  getAgentMode(): SessionAgentMode;
+  setAgentMode(agentMode: SessionAgentMode, traceContext?: TraceContext): Promise<void>;
+  seedAgentMode(
+    agentMode: SessionAgentMode,
+    reason: "create" | "resume" | "system",
     traceContext?: TraceContext,
   ): Promise<void>;
   getSessionModelSelection(): ModelSelection | undefined;

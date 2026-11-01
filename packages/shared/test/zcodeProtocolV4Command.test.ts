@@ -614,6 +614,7 @@ describe("zcode-protocol-v4 command", () => {
         "setAutoDrain",
         "setFollowupMode",
         "switchCollaborationMode",
+        "switchAgentMode",
         "switchModelConfig",
       ].sort(),
     );
@@ -649,6 +650,20 @@ describe("zcode-protocol-v4 command", () => {
       baseLogEpoch: "epoch-3",
       type: "switchCollaborationMode",
       payload: { mode: "plan" },
+      issuedAt: 1000,
+    });
+    expect(ok.ok).toBe(true);
+  });
+
+  it("parses switchAgentMode with a complete CAS envelope", () => {
+    const ok = parseCommandEnvelope({
+      commandId: "cmd-agent-mode-1",
+      clientId: "client-1",
+      sessionId: "s-1",
+      baseRevision: 3,
+      baseLogEpoch: "epoch-3",
+      type: "switchAgentMode",
+      payload: { agentMode: "superagent" },
       issuedAt: 1000,
     });
     expect(ok.ok).toBe(true);

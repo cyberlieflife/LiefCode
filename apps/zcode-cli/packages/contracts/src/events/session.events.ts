@@ -88,6 +88,8 @@ export const SessionEventType = {
   SessionCompacted: "session_compacted",
   SessionTitleUpdated: "session_title_updated",
   SessionModeChanged: "session_mode_changed",
+  // 会话模式（agent / superagent）独立于协作模式，单独成事件避免语义混用。
+  SessionAgentModeChanged: "session_agent_mode_changed",
   SessionEnded: "session_ended",
   TurnStarted: "turn_started",
   TurnInputReceived: "turn_input_received",
@@ -699,6 +701,16 @@ export interface SessionModeChangedPayload {
   toolCallId?: ToolCallId;
 }
 
+/** 会话模式值域与 packages/shared/src/agent-mode.ts 保持一致；CLI 独立依赖树不直接导入。 */
+export type SessionAgentMode = "agent" | "superagent";
+
+export interface SessionAgentModeChangedPayload {
+  from: SessionAgentMode;
+  to: SessionAgentMode;
+  /** command 为用户切换；create/resume 用于建立初始事实；system 为内部降级。 */
+  reason: "command" | "create" | "resume" | "system";
+}
+
 export type TargetCompletionVerificationStatus =
   | "started"
   | "completed"
@@ -1300,6 +1312,7 @@ export type SessionEventPayload =
   | SessionCompactedPayload
   | SessionTitleUpdatedPayload
   | SessionModeChangedPayload
+  | SessionAgentModeChangedPayload
   | TurnStartedPayload
   | TurnInputReceivedPayload
   | TurnSteerQueuedPayload

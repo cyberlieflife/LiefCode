@@ -251,6 +251,8 @@ export interface SessionConfigSeed {
   thought?: string;
   thoughtLevels?: readonly string[];
   mode?: string;
+  /** 会话模式；恢复时由 runtime 真值注入，避免只靠事件。 */
+  agentMode?: "agent" | "superagent";
 }
 
 export interface SessionUsageSeed {
@@ -519,6 +521,7 @@ export class ProductProjection {
   // 又避免后续种子覆盖新事件已原子发布的模型能力。
   private configThoughtLevelsTouchedByEvent = false;
   private configModeTouchedByEvent = false;
+  private configAgentModeTouchedByEvent = false;
   // assistant 守恒：非运行期拒收的正文流计数（gateway 据此置 stale）。
   private droppedContentStreamEventCount = 0;
   // 读取期 legacy fallback 必须可观测；否则 normalizer 缺字段后仍会退化为“可见但不可寻址”。
@@ -641,6 +644,14 @@ export class ProductProjection {
     }
     if (!this.configModeTouchedByEvent && seed.mode && config.mode !== seed.mode) {
       config.mode = seed.mode;
+      changed = true;
+    }
+    if (
+      !this.configAgentModeTouchedByEvent &&
+      seed.agentMode &&
+      config.agentMode !== seed.agentMode
+    ) {
+      config.agentMode = seed.agentMode;
       changed = true;
     }
     if (
@@ -1197,6 +1208,7 @@ export class ProductProjection {
     clone.configModelTouchedByEvent = this.configModelTouchedByEvent;
     clone.configThoughtLevelsTouchedByEvent = this.configThoughtLevelsTouchedByEvent;
     clone.configModeTouchedByEvent = this.configModeTouchedByEvent;
+    clone.configAgentModeTouchedByEvent = this.configAgentModeTouchedByEvent;
     clone.droppedContentStreamEventCount = this.droppedContentStreamEventCount;
     clone.normalizationDiagnostics = [...this.normalizationDiagnostics];
     return clone;
@@ -1242,6 +1254,7 @@ export class ProductProjection {
     this.configModelTouchedByEvent = candidate.configModelTouchedByEvent;
     this.configThoughtLevelsTouchedByEvent = candidate.configThoughtLevelsTouchedByEvent;
     this.configModeTouchedByEvent = candidate.configModeTouchedByEvent;
+    this.configAgentModeTouchedByEvent = candidate.configAgentModeTouchedByEvent;
     this.droppedContentStreamEventCount = candidate.droppedContentStreamEventCount;
     this.normalizationDiagnostics = candidate.normalizationDiagnostics;
   }
@@ -1530,6 +1543,8 @@ export class ProductProjection {
         return this.onFollowupModeChanged(event);
       case SessionEventType.SessionModeChanged:
         return this.onSessionModeChanged(event);
+      case SessionEventType.SessionAgentModeChanged:
+        return this.onSessionAgentModeChanged(event);
       case SessionEventType.TurnComplete:
         return this.onTurnComplete(event);
       case SessionEventType.TurnError:
@@ -4177,6 +4192,26 @@ export class ProductProjection {
           config: nextConfig,
           availability: computeAvailability(context),
           inputRouting: computeInputRouting(context, mode),
+        },
+      },
+    ];
+  }
+
+  /**
+   * switchAgentMode：SessionAgentModeChanged → config.agentMode。
+   * 与协作模式分离投影，互不覆盖；历史会话没有事件时由 schema 默认值兜底为 agent。
+   */
+  private onSessionAgentModeChanged(event: SessionEvent): ConversationDelta[] {
+    const payload = event.payload as { to?: string };
+    const agentMode = payload.to === "superagent" ? "superagent" : "agent";
+    // 事件触碰过的字段不再被种子覆盖（与 mode 同一裁决）。
+    this.configAgentModeTouchedByEvent = true;
+    if (this.snapshot.config.agentMode === agentMode) return [];
+    return [
+      {
+        op: "state.updated",
+        patch: {
+          config: { ...this.snapshot.config, agentMode },
         },
       },
     ];

@@ -52,6 +52,8 @@ export const sessionSummarySchema = z.object({
   lastActivityAt: timestampSchema,
   // ≤120 字符。
   lastAssistantPreview: z.string().optional(),
+  // 会话模式徽标；optional 兼容旧 frame / 旧 CLI / 旧持久化摘要。
+  agentMode: z.enum(["agent", "superagent"]).optional(),
   createdAt: timestampSchema,
 });
 export type SessionSummary = z.infer<typeof sessionSummarySchema>;
