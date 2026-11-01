@@ -85,3 +85,12 @@ export function readSnapshot(ack: SuperAgentAck | null): SuperAgentSnapshotView 
   const snapshot = ack?.result?.type === "superAgent" ? ack.result.snapshot : undefined;
   return snapshot && typeof snapshot === "object" ? (snapshot as SuperAgentSnapshotView) : null;
 }
+
+/**
+ * 失败回执的可读原因：`fault.command.executionFailed` 是协议层归一码，
+ * 真正原因在 message（例如来源配置校验失败）；其余领域错误码更具体，保持原样。
+ */
+export function describeSuperAgentAckError(ack: SuperAgentAck | null, fallback: string): string {
+  if (ack?.reasonCode === "fault.command.executionFailed" && ack.message) return ack.message;
+  return ack?.reasonCode ?? ack?.message ?? fallback;
+}

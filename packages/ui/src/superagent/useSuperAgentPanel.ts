@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { logger } from "@/logger.js";
-import { readSnapshot, type SuperAgentDispatch, type SuperAgentSnapshotView } from "./types.js";
+import {
+  describeSuperAgentAckError,
+  readSnapshot,
+  type SuperAgentDispatch,
+  type SuperAgentSnapshotView,
+} from "./types.js";
 
 const POLL_INTERVAL_MS = 5_000;
 
@@ -31,7 +36,7 @@ export function useSuperAgentPanel(input: {
     const ack = await dispatchRef.current("superAgentQuery", {});
     if (!mounted.current) return;
     if (ack?.status !== "accepted" && ack?.status !== "noop" && ack?.status !== "duplicate") {
-      setError(ack?.reasonCode ?? ack?.message ?? "superagent_unavailable");
+      setError(describeSuperAgentAckError(ack, "superagent_unavailable"));
       return;
     }
     setError(null);
@@ -52,7 +57,7 @@ export function useSuperAgentPanel(input: {
       try {
         const ack = await dispatchRef.current(type, payload);
         if (ack?.status !== "accepted" && ack?.status !== "noop" && ack?.status !== "duplicate") {
-          setError(ack?.reasonCode ?? ack?.message ?? "superagent_action_failed");
+          setError(describeSuperAgentAckError(ack, "superagent_action_failed"));
         } else {
           setError(null);
           const next = readSnapshot(ack);

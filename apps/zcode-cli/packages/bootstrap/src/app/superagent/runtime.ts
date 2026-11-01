@@ -514,6 +514,8 @@ export class SuperAgentRuntime {
       for (const kindId of ["github", "feishu"] as const) {
         const kind = this.registry.get(kindId);
         if (!kind) continue;
+        // 只校验启用中的来源：未启用的来源允许保留空配置，否则一个未配置的来源会拦住其它来源的保存。
+        if (next.sources[kindId].enabled !== true) continue;
         kind.parseConfig(next.sources[kindId]);
       }
     }

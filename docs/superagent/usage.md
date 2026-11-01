@@ -29,6 +29,8 @@ SuperAgent 把一个会话变成常驻的路由器：它从 GitHub 或飞书接�
 
 面板每 5 秒刷新一次，执行操作后也会立即刷新。数据来自当前会话自己的 SuperAgent 运行时，不经过全局缓存。
 
+来源配置在「设置 → 来源配置」的 sources JSON 里编辑。保存时只校验已启用的来源，未启用的来源可以保留空配置，不会影响其它来源保存。
+
 ## 3. 工单阶段怎么读
 
 | 阶段 | 含义 | 你该做什么 |
@@ -46,8 +48,8 @@ SuperAgent 把一个会话变成常驻的路由器：它从 GitHub 或飞书接�
 ## 4. 配置 GitHub
 
 1. 确保 `gh` 已登录一个有仓库写权限的账号。建议给 Agent 单独建一个账号，并把它的 CLI 配置隔离出来。
-2. 在面板「来源 → GitHub」启用来源。
-3. 在设置页的 sources JSON 中填写 `repository`（`owner/name`）和 `cli`（默认 `gh`）。需要仓库内所有 Issue/PR 时再打开 `observeIssues` / `observePulls`。
+2. 在面板「设置 → 来源配置」的 sources JSON 中填写 `repository`（`owner/name`）和 `cli`（默认 `gh`），然后保存。需要仓库内所有 Issue/PR 时再打开 `observeIssues` / `observePulls`。
+3. 回到「来源 → GitHub」启用来源。`repository` 不是 `owner/name` 时启用按钮保持禁用，避免保存必然失败的配置。
 4. 评估页签里确认接单模式。新安装默认是 `observe`：模型会评估候选，但只记录「would accept」，不会真的接单。观察几天后再切到 `auto`。
 
 Agent 通过 `gh` 评论、推送分支、开 PR。默认不会自动合并；需要自动合并时，在提示词的「交付」段写明条件与使用的账号。
@@ -64,7 +66,7 @@ Agent 通过 `gh` 评论、推送分支、开 PR。默认不会自动合并；�
 
 `poll` 返回 `{"items":[...],"next":"..."}`，条目包含 `id`、`chat_id`、`root_id`、`sender{id,type}`、`text`、`create_time`、`mentions_me`。`reply` 在目标永久不可达时以非零退出并在 stderr 写 `gone`，其余错误会被重试。
 
-在面板「来源 → 飞书」启用后，在 sources JSON 里填写 `cli`、`chats`（`chatId`、`name`、`listen: "mentions" | "all"`）以及是否接收私信。`listen: "all"` 的会话里，没点名 Agent 的消息也会进入准入判断；其他会话默认只看点名。
+在面板「设置 → 来源配置」的 sources JSON 里填写 `cli`、`chats`（`chatId`、`name`、`listen: "mentions" | "all"`）以及是否接收私信，保存后到「来源 → 飞书」启用。`listen: "all"` 的会话里，没点名 Agent 的消息也会进入准入判断；其他会话默认只看点名。
 
 ## 6. 授权与安全
 

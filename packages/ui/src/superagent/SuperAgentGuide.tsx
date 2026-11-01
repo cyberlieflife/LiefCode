@@ -77,8 +77,9 @@ export function SuperAgentGuide() {
         <Steps
           items={[
             "确保 gh 已登录一个有仓库写权限的账号。建议给 Agent 单独建账号并隔离 CLI 配置。",
-            "在「来源 → GitHub」启用，然后在设置页的 sources JSON 里填 repository（owner/name）与 cli。",
+            "在面板「设置 → 来源配置」的 JSON 里填 repository（owner/name）与 cli。",
             "需要仓库内所有 Issue/PR 时再打开 observeIssues / observePulls；默认只走账号通知。",
+            "回到「来源 → GitHub」启用来源；repository 未填成 owner/name 时启用按钮保持禁用。",
             "确认接单模式。建议先 observe 观察几天，再切 auto。",
           ]}
         />
@@ -99,7 +100,7 @@ thread --chat <chatId> --root <messageId> --json`}</Code>
           目标永久不可达时 reply 以非零退出并在 stderr 写 gone，其余错误会被重试。
         </p>
         <p className="mt-2">
-          启用后在 sources JSON 里配置 chats；listen 设为 all 的会话里，没点名 Agent 的消息也会进入准入判断。
+          在「设置 → 来源配置」的 JSON 里配置 chats，再到「来源 → 飞书」启用；listen 设为 all 的会话里，没点名 Agent 的消息也会进入准入判断。
         </p>
       </Section>
 

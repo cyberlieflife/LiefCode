@@ -105,6 +105,61 @@ describe("superagent runtime", () => {
     await sa.stop();
   });
 
+  it("saves sources while disabled entries stay unconfigured", async () => {
+    const { runtime: sa, store } = runtime();
+    const revision = Number(store.getKv("settings:revision"));
+    const settings = sa.settings();
+    // 启用中的来源仍要校验：空 repository 不能启用。
+    expect(() =>
+      sa.saveSettings(
+        "sources",
+        {
+          ...settings.sources,
+          github: { ...settings.sources.github, enabled: true },
+        },
+        revision,
+      ),
+    ).toThrow(/owner\/name/u);
+    // 未启用的来源保留空配置时，不影响其它来源保存。
+    expect(() =>
+      sa.saveSettings(
+        "sources",
+        {
+          ...settings.sources,
+          feishu: { ...settings.sources.feishu, enabled: true },
+        },
+        revision,
+      ),
+    ).not.toThrow();
+    expect(sa.snapshot().sourceSettings.github).toMatchObject({
+      enabled: false,
+      repository: "",
+    });
+    expect(sa.snapshot().sourceSettings.feishu).toMatchObject({ enabled: true });
+    await sa.stop();
+  });
+
+  it("saves an enabled GitHub source once repository is configured", async () => {
+    const { runtime: sa, store } = runtime();
+    const revision = Number(store.getKv("settings:revision"));
+    const settings = sa.settings();
+    expect(() =>
+      sa.saveSettings(
+        "sources",
+        {
+          ...settings.sources,
+          github: { ...settings.sources.github, enabled: true, repository: "octo/repo" },
+        },
+        revision,
+      ),
+    ).not.toThrow();
+    expect(sa.snapshot().sourceSettings.github).toMatchObject({
+      enabled: true,
+      repository: "octo/repo",
+    });
+    await sa.stop();
+  });
+
   it("ends a ticket when stopped and asks the executor to stop", async () => {
     const { runtime: sa, store, executor } = runtime();
     sa.engineRef.receive({

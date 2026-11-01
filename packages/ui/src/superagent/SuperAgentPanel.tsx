@@ -255,11 +255,15 @@ function SourcesTab({
 }) {
   const github = (snapshot.sourceSettings.github ?? {}) as Record<string, unknown>;
   const feishu = (snapshot.sourceSettings.feishu ?? {}) as Record<string, unknown>;
+  const repository = typeof github.repository === "string" ? github.repository : "";
+  // 协议层要求 repository 为 owner/name；未配置时禁用启用按钮，避免必然失败的保存。
+  const repositoryConfigured = repository.includes("/");
   return (
     <>
       <SourceCard
         title="GitHub"
         enabled={Boolean(github.enabled)}
+        toggleDisabled={!repositoryConfigured}
         onToggle={(enabled) =>
           void run("superAgentSaveSettings", {
             block: "sources",
@@ -269,10 +273,15 @@ function SourcesTab({
         }
         busy={busy}
       >
-        <Row label="仓库" value={String(github.repository ?? "未配置")} />
+        <Row label="仓库" value={repository || "未配置"} />
         <Row label="CLI" value={String(github.cli ?? "gh")} />
         <Row label="Issue" value={github.observeIssues ? "接收" : "仅通知"} />
         <Row label="Pull request" value={github.observePulls ? "接收" : "仅通知"} />
+        {repositoryConfigured ? null : (
+          <div className="mt-2 text-ui-xs text-foreground-subtle">
+            先在「设置 → 来源配置」填写 repository（owner/name），再启用来源。
+          </div>
+        )}
       </SourceCard>
       <SourceCard
         title="飞书"
@@ -293,7 +302,7 @@ function SourcesTab({
         />
       </SourceCard>
       <div className="text-ui-xs text-foreground-subtle">
-        详细账户与轮询参数在设置页的 JSON 块中配置；这里只做运行开关。
+        GitHub 与飞书的详细参数在「设置 → 来源配置」的 JSON 中编辑；这里只做运行开关。
       </div>
     </>
   );
@@ -304,12 +313,14 @@ function SourceCard({
   enabled,
   onToggle,
   busy,
+  toggleDisabled = false,
   children,
 }: {
   title: string;
   enabled: boolean;
   onToggle: (enabled: boolean) => void;
   busy: boolean;
+  toggleDisabled?: boolean;
   children: ReactNode;
 }) {
   return (
@@ -318,7 +329,7 @@ function SourceCard({
         <span className="text-foreground-subtle">{enabled ? "已启用" : "已停用"}</span>
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || toggleDisabled}
           onClick={() => onToggle(!enabled)}
           className="rounded-md border border-border px-2 py-1 text-ui-xs hover:bg-tag"
         >
@@ -518,6 +529,10 @@ function SettingsTab({
   const [acceptMode, setAcceptMode] = useState(snapshot.acceptMode);
   const [unattended, setUnattended] = useState(executor.unattendedWorkers === true);
   const [sections, setSections] = useState(snapshot.prompts.sections);
+  const [sourcesJson, setSourcesJson] = useState(() =>
+    JSON.stringify(snapshot.sourceSettings, null, 2),
+  );
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
 
   useEffect(() => {
     setMaxWorkers(String(executor.maxWorkers ?? 2));
@@ -526,6 +541,8 @@ function SettingsTab({
     setAcceptMode(snapshot.acceptMode);
     setUnattended(executor.unattendedWorkers === true);
     setSections(snapshot.prompts.sections);
+    setSourcesJson(JSON.stringify(snapshot.sourceSettings, null, 2));
+    setSourcesError(null);
   }, [snapshot.revision, snapshot.prompts.revision]);
 
   const executorValue = useMemo(
@@ -539,8 +556,54 @@ function SettingsTab({
     [executor, maxWorkers, executionRoot, prepareCommand, unattended],
   );
 
+  const saveSources = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(sourcesJson);
+    } catch (error) {
+      setSourcesError(
+        `来源配置不是合法 JSON：${error instanceof Error ? error.message : String(error)}`,
+      );
+      return;
+    }
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      setSourcesError("来源配置必须是包含 github 与 feishu 的对象");
+      return;
+    }
+    setSourcesError(null);
+    void run("superAgentSaveSettings", {
+      block: "sources",
+      revision: snapshot.revision,
+      value: parsed,
+    });
+  };
+
   return (
     <>
+      <Section title="来源配置">
+        <label className="mb-2 block text-ui-xs text-foreground-subtle">
+          sources JSON
+          <textarea
+            className="mt-1 min-h-[140px] w-full rounded-md border border-border bg-background px-2 py-1 font-mono text-ui-xs"
+            value={sourcesJson}
+            onChange={(event) => setSourcesJson(event.target.value)}
+          />
+        </label>
+        {sourcesError ? (
+          <div className="mb-2 rounded-md border border-danger/40 bg-danger/10 px-2 py-1 text-ui-xs text-danger">
+            {sourcesError}
+          </div>
+        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          className="rounded-md border border-border px-2 py-1 text-ui-xs hover:bg-tag"
+          onClick={saveSources}
+        >
+          保存来源配置
+        </button>
+      </Section>
+
       <Section title="执行">
         <label className="mb-2 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 px-2 py-2 text-ui-xs">
           <input
